@@ -1,7 +1,7 @@
 from array import array
 import pandas as pd
 import numpy as np
-from ROOT import TH1F, TCanvas, TGraph, TLatex
+from ROOT import TH1F, TCanvas, TGraph, TLatex, gPad
 
 def read(hadron = "Omega_ccc", collision = "PbPb"):
 
@@ -31,7 +31,7 @@ def read(hadron = "Omega_ccc", collision = "PbPb"):
         nevt = 38*1e9
         energy = 2.76
 
-    legendtext = '%s %.2f TeV, N^{MB}_{ev} = %d B, BR=%.3f percent \
+    legendtext = '%s %.2f TeV, N^{MB}_{ev} = %.1f B, BR=%.3f percent \
        efficiency=%.3f, %d x w.r.t. coalescence' % (collision, energy, nevt/1e9, br*100, eff, enhanc)
     scale_factor =br * enhanc * eff * nevt;
 
@@ -57,6 +57,7 @@ def read(hadron = "Omega_ccc", collision = "PbPb"):
     c1 = TCanvas( 'c1', 'A Simple Graph Example')
     c1.SetCanvasSize(1500, 1000)
     c1.cd()
+    gPad.SetLogy()
     hempty = TH1F("hempty", "hempty", 100, 0., 1033.)
     hempty.Draw()
     gr.Draw('ACPsame')
