@@ -3,9 +3,6 @@ import pandas as pd
 import numpy as np
 from ROOT import TH1F, TCanvas, TGraph, TLatex
 
-hadron = "Omega_ccc" #Omega_ccc, Xsi_cc
-collision = "PbPb"
-
 def read(hadron = "Omega_ccc", collision = "PbPb"):
 
     if hadron is "Omega_ccc":
@@ -22,6 +19,13 @@ def read(hadron = "Omega_ccc", collision = "PbPb"):
         stringname = "Xi_cc"
         latexname = "\Xi_{cc}"
         filename = "Xsi_cc_LHC_PbPb_276TeV"
+    if hadron is "Lc":
+        br = 6.28*0.01
+        enhanc = 1
+        eff = 0.1
+        stringname = "Lc"
+        latexname = "\Lambda_{c}"
+        filename = "Lc_LHC_PbPb_276TeV"
 
     if collision is "PbPb":
         nevt = 38*1e9
@@ -32,7 +36,7 @@ def read(hadron = "Omega_ccc", collision = "PbPb"):
     scale_factor =br * enhanc * eff * nevt;
 
     #df = pd.read_csv('Omega_ccc_LHC_PbPb_276TeV.csv')
-    df = pd.read_csv(filename+".csv")
+    df = pd.read_csv("Inputs/" + filename+".csv")
     pt = df["pt"]
     cross = df["cross"]
     hist = TH1F('hist', 'hist', 100, 0, 1)
@@ -67,3 +71,5 @@ def read(hadron = "Omega_ccc", collision = "PbPb"):
     c1.SaveAs(filename+".pdf")
 
 read("Omega_ccc", "PbPb")
+read("Xsi_cc", "PbPb")
+read("Lc", "PbPb")
