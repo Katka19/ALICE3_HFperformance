@@ -5,6 +5,10 @@ latexparticle:
   Omega_ccc: "#Omega_{ccc}"
   X3872: "X(3872)"
 
+text_string:
+  pp14p0: "pp #sqrt{s}= 14 TeV"
+  absy3p0: "|y| < 3.0"
+  Pyhia8mode2: "Pythia 8, mode = 2"
 statistics:
   PbPb2p76: 
     sigmaAA_b: 7.8 #FIXME these are copied from 5.52 TeV 
