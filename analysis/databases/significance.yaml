@@ -3,7 +3,7 @@ Lambda_c:
     absy3p0:
       ymin: 40
       ymax: 10000000
-      binning: [0.,1.,2.,4.,8.,12.]
+      binning: [0.,1.,2.,4.,6.,8.,10.]
       efffile: ../InputsExp/Lc_ptdep_pp14p0_absy3p0_scenario3/efficiencies.root
       histoeff: eff
       bkgfile: ../InputsExp/Lc_ptdep_pp14p0_absy3p0_scenario3/bkgperevent.root
