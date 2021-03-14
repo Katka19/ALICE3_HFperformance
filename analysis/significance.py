@@ -6,6 +6,15 @@ import yaml
 from ROOT import TH1F, TH2F, TCanvas, TGraph, TLatex, gPad, TFile, TF1
 from ROOT import gStyle, gROOT, TStyle, TLegendEntry, TLegend
 
+"""
+Macro to perform significance estimation of a given decay channel
+in a given collision system. The ingredients are:
+    - efficiency vs pt
+    - estimated background yield within 3sigma below the peak / event
+      bkgperevent is already multiplied by binwidth
+    - expected signal yield / event = dN/dpT * binwidth * BR * efficiency
+"""
+
 def analysis(hadron="Lambda_c", collision="pp14p0", yrange="absy3p0", \
         brmode="central", model="Pyhia8mode2", use_unnorm=1):
     gStyle.SetOptStat(0)
@@ -64,7 +73,7 @@ def analysis(hadron="Lambda_c", collision="pp14p0", yrange="absy3p0", \
 
     for ibin in range(histoyieldth.GetNbinsX()):
         binwdith = histoyieldth.GetBinWidth(ibin+1)
-        yieldperevent = histoyieldth.GetBinContent(ibin+1)*binwdith
+        yieldperevent = histoyieldth.GetBinContent(ibin+1)*binwdith*bratio
         histoyieldth.SetBinContent(ibin+1, yieldperevent)
         histoyieldth.SetBinError(ibin+1, 0.)
     histoyieldth = histoyieldth.Rebin(len(binanal)-1, \
@@ -100,7 +109,7 @@ def analysis(hadron="Lambda_c", collision="pp14p0", yrange="absy3p0", \
 
     histosignf = histosignfperevent.Clone("histosignf")
     for ibin in range(histoyieldth.GetNbinsX()):
-        yieldperevent = histoyieldth.GetBinContent(ibin+1)*bratio
+        yieldperevent = histoyieldth.GetBinContent(ibin+1)
         bkgperevent = hbkgperevent.GetBinContent(ibin+1)
         eff = histoeff.GetBinContent(ibin+1)
         signalperevent = eff*yieldperevent

@@ -7,14 +7,20 @@ from ROOT import TH1F, TH2F, TCanvas, TGraph, TLatex, gPad, TFile, TF1
 from ROOT import gStyle, gROOT, TStyle, TLegendEntry
 
 """
-read predictions from arXiv.1907.12786
+read predictions from arXiv.1907.12786.
+The predictions are given for PbPb collisions at 2.76 TeV at mid-rapidity
+for one unit of rapidity (therefore |y|<0.5).
 """
-
 def read_predictions(hadron="Omega_ccc"):
     collision = "PbPb"
+
+    # the option below do2pipnorm switches on/off the rinormalization of the
+    #extracted spectrum,  which are given as 2*pi*pt dN/dpT.
+    #For obtaining the dN/dpt one has to multiply for 2*pi*pt.
     do2pipnorm = 1
     energy = 2.76
 
+    #miny,maxy are the yaxis min and max for plotting reasons only.
     if hadron == "Lambda_c":
         filename = "Lambda_c_ptdep_Stat_ChoLee_2_PbPb2p76_absy0p5"
         miny = 0.0001
@@ -39,6 +45,9 @@ def read_predictions(hadron="Omega_ccc"):
     with open(r'databases/general.yaml') as fileparam:
         param = yaml.load(fileparam, Loader=yaml.FullLoader)
     latexname = param["latexparticle"][hadron]
+
+    #the binning of the ROOT histo in which the predictions will
+    #be saved is hardcoded.
     nbins = 50
     minb = 0.
     maxb = 50.
@@ -55,7 +64,10 @@ def read_predictions(hadron="Omega_ccc"):
         cross_val_ptscaled = array('f', [2*3.14*a*b for a, b in zip(ptcand_val, cross_val)])
     if do2pipnorm == 0:
         cross_val_ptscaled = cross_val
+
+    #number of data points in each predictions
     npoints = 25
+
     grpred = TGraph(npoints, ptcand_val, cross_val_ptscaled)
     grpred.SetName("gdNdpt")
     grpred.SetLineColor(1)
@@ -69,8 +81,12 @@ def read_predictions(hadron="Omega_ccc"):
     histo = TH1F("hdNdpt", ";p_{T}; #Delta N/#Delta p_{T}, |y|<0.5", nbins, minb, maxb)
     norm = 0.
     for i in range(nbins-1):
+        #to allow for the use of a arbitrary binning, we use the Eval function
+        #of TGraph. We set to zero the prediction for xvalues for which data
+        #are not given (8 GeV/c in this case). Given that most of the
+        #cross-section is at low pT the bias is negligible
         yvalue = grpred.Eval(i*width+width/2.)
-        if yvalue < 0:
+        if i*width+width/2. > 8.:
             yvalue = 0.
         histo.SetBinContent(i+1, yvalue)
         print(i+1, i*width+width/2., yvalue)

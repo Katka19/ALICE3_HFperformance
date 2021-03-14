@@ -5,6 +5,14 @@ import yaml
 from ROOT import TH1F, TH2F, TCanvas, TGraph, TLatex, gPad, TFile, TF1
 from ROOT import gStyle, gROOT, TStyle, TLegendEntry, TLegend
 
+"""
+Perform comparison between expected yields of the different baryons based
+on dN/dy from different theoretical calculations and different assumptions
+for the integrated luminosity of the various ion species.
+for the moment we use the pT-shape normalized to unity from
+arXiv.1907.12786 and we just multiply for dN/dy of each model.
+"""
+
 def analysis(hadron="Omega_ccc"):
     gStyle.SetOptStat(0)
     with open(r'databases/theory_yields.yaml') as fileparamyields:
@@ -26,7 +34,7 @@ def analysis(hadron="Omega_ccc"):
     histolist = [None]*len(models)
 
     fin = TFile("../InputsTheory/" + useshape +".root")
-    histo_norm = fin.Get("hdNdpt_norm")
+    histo_norm = fin.Get("hdNdpt_norm") #this is the pT-shape normalized to unity
 
 
     for icase, _ in enumerate(models):
@@ -66,6 +74,9 @@ def analysis(hadron="Omega_ccc"):
     leg.SetFillColor(0)
     leg.SetTextSize(0.022)
     leg.SetFillStyle(1001)
+
+    # each case represents a combination of expected dNdy,
+    # collision type and HP on the branching ratio.
     for icase, _ in enumerate(models):
         brmode = brmodes[icase]
         collision = collisions[icase]
@@ -74,25 +85,27 @@ def analysis(hadron="Omega_ccc"):
 
         sigma_aa_b = paramgen["statistics"][collision]["sigmaAA_b"]
         lumiaa_monthi_invnb = paramgen["statistics"][collision]["lumiAA_monthi_invnb"]
-        nevt = sigma_aa_b * lumiaa_monthi_invnb * 1e9
+        nevt = sigma_aa_b * lumiaa_monthi_invnb * 1e9 #luminosity given in nb-1
         bratio = paramgen["branchingratio"][hadron][brmode]
         yieldmid = paramyields[model][collision][yrange][hadron]
         text = '%s N_{ev}(%s) = %.1f B, BR=%.5f%%' \
                 % (model, collision, nevt/1e9, bratio*100)
         scalef = bratio * nevt * yieldmid
 
+        # before rebinning, the dNdpT is multiplied by the binwidth,
+        # branching ratios, expected dN/dy and number of events
+        # so that the yields can be simplied summed in rebinning process.
         for ibin in range(histolist[icase].GetNbinsX()):
             binwdith = histolist[icase].GetBinWidth(ibin+1)
             yvalue = histolist[icase].GetBinContent(ibin+1)
             histolist[icase].SetBinContent(ibin+1, binwdith*scalef*yvalue)
         histolist[icase] = histolist[icase].Rebin(len(binanal)-1, \
-            "histo_pred%s%s%s" % (model, collision, brmode), \
-            binanal)
+            "histo_pred%s%s%s" % (model, collision, brmode), binanal)
         histolist[icase].SetLineColor(colors[icase])
         histolist[icase].SetMarkerColor(colors[icase])
         histolist[icase].SetLineWidth(2)
         histolist[icase].Draw("same")
-        text = text + " Yield(tot)=%.2f" % (histolist[icase].Integral(0, 8))
+        text = text + " Yield(tot)=%.2f" % (histolist[icase].Integral())
         leg.AddEntry(histolist[icase], text, "pF")
     leg.Draw()
     canvas.SaveAs(hadron+"_results.pdf")
