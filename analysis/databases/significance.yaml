@@ -11,3 +11,16 @@ Lambda_c:
       theoryfile: ../InputsTheory/Lambda_c_ptdep_Pyhia8mode2_pp14p0_absy3p0.root
       histoyield: hLcpt_N
       histoyield_norm: hLcpt_N
+Jpsitoee:
+  pp14p0:
+    absy2p0:
+      ymin: 40
+      ymax: 10000000
+      binning: [0.,1.,2.,4.,6.,8.,10.]
+      efffile: ../InputsExp/Jpsi_ptdep_pp14p0_absy2p0_scenario3/efficiencies.root #this is temporarily the Lc files
+      histoeff: eff
+      bkgfile: ../InputsExp/Jpsi_ptdep_pp14p0_absy2p0_scenario3/bkgperevent.root #this is temporarily the Lc files
+      histobkg: hbkg_fromsidebands
+      theoryfile: ../InputsTheory/Jpsi_ptdep_Pyhia8monash_pp14p0_absy2p0.root #this is temporarely the Lc file
+      histoyield: hLcpt_N #to be replaced with the name of the jpsi th histogram
+      histoyield_norm: hLcpt_N #to be replaced with the name of the jpsi th histogram
