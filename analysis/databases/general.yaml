@@ -4,11 +4,13 @@ latexparticle:
   Omega_cc: "#Omega_{cc}"
   Omega_ccc: "#Omega_{ccc}"
   X3872: "X(3872)"
-
+  Jpsitoee: "J/#psi #rightarrow e^{+}e^{-}"
 text_string:
   pp14p0: "pp #sqrt{s}= 14 TeV"
   absy3p0: "|y| < 3.0"
+  absy2p0: "|y| < 2.0"
   Pyhia8mode2: "Pythia 8, mode = 2"
+  Pyhia8monash: "Pythia 8, monash tune"
 statistics:
   PbPb2p76: 
     sigmaAA_b: 7.8 #FIXME these are copied from 5.52 TeV 
@@ -30,6 +32,8 @@ statistics:
     lumiAA_monthi_invnb: 3000000
 
 branchingratio:
+  Jpsitoee:
+    central: 0.0594
   Lambda_c:
     central: 0.0628
   Xi_cc: #https://arxiv.org/abs/1703.09086

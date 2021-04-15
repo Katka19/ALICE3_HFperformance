@@ -47,10 +47,11 @@ def analysis(hadron="Lambda_c", collision="pp14p0", yrange="absy3p0", \
     nevt = sigma_aa_b * lumiaa_monthi_invnb * 1e9
     #nevt = 2.*1e9
     bratio = paramgen["branchingratio"][hadron][brmode]
+    decaychannel = paramgen["latexparticle"][hadron]
 
     yieldmid = paramyields[model][collision][yrange][hadron]
     text = '%s, N_{ev} = %.0f 10^{12}' % (textmodel, nevt/1e12)
-    text_a = '#Lambda_{c} #rightarrow pK#pi, %s, BR=%.2f%%' % (textrapid, bratio*100)
+    text_a = '%s, %s, BR=%.2f%%' % (decaychannel, textrapid, bratio*100)
     text_b = 'ALICE3 projection, with IRIS, no PID, %s' % textcollision
     fileeff = TFile(nfileeff)
     histoeff = fileeff.Get(nhistoeff)
@@ -159,4 +160,5 @@ def analysis(hadron="Lambda_c", collision="pp14p0", yrange="absy3p0", \
     histoyieldth.Write()
     histosignf.Write()
     histodndptth.Write()
-analysis("Lambda_c")
+analysis("Lambda_c", "pp14p0", "absy3p0", "central", "Pyhia8mode2", 1)
+analysis("Jpsitoee", "pp14p0", "absy2p0", "central", "Pyhia8monash", 1)

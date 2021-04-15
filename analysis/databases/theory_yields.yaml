@@ -65,6 +65,11 @@ Pyhia8mode2:
   pp14p0:
     absy3p0:
       Lambda_c: 1
+
+Pyhia8monash:
+  pp14p0:
+    absy2p0:
+      Jpsitoee: 1
 comparison_models_AA:
   pt_binning:
     Lambda_c: [0,1,2,3,4,5,6,7,8,9,10]
