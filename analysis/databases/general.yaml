@@ -9,6 +9,7 @@ text_string:
   pp14p0: "pp #sqrt{s}= 14 TeV"
   absy3p0: "|y| < 3.0"
   absy2p0: "|y| < 2.0"
+  absy1p44: "|y| < 1.44"
   Pyhia8mode2: "Pythia 8, mode = 2"
   Pyhia8monash: "Pythia 8, monash tune"
 statistics:
