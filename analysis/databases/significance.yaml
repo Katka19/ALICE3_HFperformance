@@ -17,10 +17,10 @@ Jpsitoee:
       ymin: 1
       ymax: 100000
       binning: [0.,1.,2.,3.,4.,5.,7.,10.]
-      efffile: ../InputsExp/Jpsi_ptdep_pp14p0_absy2p0_scenario3/efficiencies.root #this is temporarily the Lc files
+      efffile: ../InputsExp/Jpsi_ptdep_pp14p0_absy1p44_scenario3_RICH3sigma/efficiencies.root #this is temporarily the Lc files
       histoeff: eff.root
-      bkgfile: ../InputsExp/Jpsi_ptdep_pp14p0_absy2p0_scenario3/bkgperevent.root #this is temporarily the Lc files
+      bkgfile: ../InputsExp/Jpsi_ptdep_pp14p0_absy1p44_scenario3_RICH3sigma/BkgperEvents.root #this is temporarily the Lc files
       histobkg: BkgperEvents.root
-      theoryfile: ../InputsTheory/Jpsi_ptdep_Pyhia8monash_pp14p0_absy2p0.root #this is temporarely the Lc file
+      theoryfile: ../InputsTheory/Jpsi_ptdep_Pyhia8monash_pp14p0_absy1p44.root #this is temporarely the Lc file
       histoyield: hJpsiyieldsvspt_unnorm #to be replaced with the name of the jpsi th histogram
       histoyield_norm: hJpsicrossvspt #to be replaced with the name of the jpsi th histogram
