@@ -3,7 +3,7 @@ x3872_ptdep_Pyhia8monash_pp14p0_absy1p44:
   myhadronname: x3872
   myhadronlatex: X(3872)
   pdgparticle: 100443 #this is the psi(2s)! PDG of the particle for which we want the simulation
-  maxneventsperjob: 10000 #max events per file/process
+  maxneventsperjob: 40000 #max events per file/process
   tune: 14 #monash
   beamidA: 2212 #incoming hadron
   beamidB: 2212 #incoming hadron
@@ -41,7 +41,7 @@ Lambda_c_ptdep_Pyhia8mode2_pp14p0_absy1p44:
   myhadronname: Lc
   myhadronlatex: Lc
   pdgparticle: 4122
-  maxneventsperjob: 20000 #max events per file/process
+  maxneventsperjob: 10000 #max events per file/process
   tune: 14 #monash
   beamidA: 2212 #incoming hadron
   beamidB: 2212 #incoming hadron

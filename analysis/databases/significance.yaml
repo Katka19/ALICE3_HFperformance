@@ -1,14 +1,14 @@
 Lambda_c:
   pp14p0:
-    absy3p0:
+    absy1p44:
       ymin: 40
       ymax: 10000000
       binning: [0.,1.,2.,4.,6.,8.,10.]
-      efffile: ../InputsExp/Lc_ptdep_pp14p0_absy3p0_scenario3/efficiencies.root
+      efffile: ../InputsExp/Lc_ptdep_pp14p0_absy1p44_scenario3/efficiencies.root
       histoeff: eff
-      bkgfile: ../InputsExp/Lc_ptdep_pp14p0_absy3p0_scenario3/bkgperevent.root
+      bkgfile: ../InputsExp/Lc_ptdep_pp14p0_absy1p44_scenario3/bkgperevent.root
       histobkg: hbkg_fromsidebands
-      theoryfile: ../InputsTheory/Lambda_c_ptdep_Pyhia8mode2_pp14p0_absy3p0.root
+      theoryfile: ../InputsTheory/Lambda_c_ptdep_Pyhia8mode2_pp14p0_absy1p44.root
       histoyield: hLccrossvspt
       histoyield_norm: hLccrossvspt
 Jpsitoee:
