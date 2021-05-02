@@ -115,8 +115,12 @@ def analysis(hadron="Lambda_c", collision="pp14p0", yrange="absy3p0", \
         bkgperevent = hbkgperevent.GetBinContent(ibin+1)
         eff = histoeff.GetBinContent(ibin+1)
         signalperevent = eff*yieldperevent
-        significanceperevent = signalperevent/sqrt(signalperevent+bkgperevent)
-        signaloverbkg = signalperevent/bkgperevent
+        significanceperevent = 0
+        if bkgperevent > 0:
+            significanceperevent = signalperevent/sqrt(signalperevent+bkgperevent)
+        signaloverbkg = 0
+        if bkgperevent > 0:
+            signaloverbkg = signalperevent/bkgperevent
         histosignfperevent.SetBinContent(ibin+1, significanceperevent)
         histosignfperevent.SetBinError(ibin+1, 0.)
         histosignf.SetBinContent(ibin+1, significanceperevent*sqrt(nevt))
@@ -166,4 +170,5 @@ def analysis(hadron="Lambda_c", collision="pp14p0", yrange="absy3p0", \
     histodndptth.Write()
     histosigoverbkg.Write()
 #analysis("Lambda_c", "pp14p0", "absy3p0", "central", "Pyhia8mode2", 1)
-analysis("Jpsitoee", "pp14p0", "absy1p44", "central", "Pyhia8monash", 1)
+#analysis("Jpsitoee", "pp14p0", "absy1p44", "central", "Pyhia8monash", 1)
+analysis("X3872", "pp14p0", "absy1p44", "central", "Pyhia8monash", 1)

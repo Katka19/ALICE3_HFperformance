@@ -9,8 +9,8 @@ Lambda_c:
       bkgfile: ../InputsExp/Lc_ptdep_pp14p0_absy3p0_scenario3/bkgperevent.root
       histobkg: hbkg_fromsidebands
       theoryfile: ../InputsTheory/Lambda_c_ptdep_Pyhia8mode2_pp14p0_absy3p0.root
-      histoyield: hLcpt_N
-      histoyield_norm: hLcpt_N
+      histoyield: hLccrossvspt
+      histoyield_norm: hLccrossvspt
 Jpsitoee:
   pp14p0:
     absy1p44:
@@ -26,3 +26,16 @@ Jpsitoee:
       theoryfile: ../InputsTheory/Jpsi_ptdep_Pyhia8monash_pp14p0_absy1p44.root #this is temporarely the Lc file
       histoyield: hJpsicrossvspt #to be replaced with the name of the jpsi th histogram
       histoyield_norm: hJpsicrossvspt #to be replaced with the name of the jpsi th histogram
+X3872:
+  pp14p0:
+    absy1p44:
+      ymin: 0.00001
+      ymax: 100
+      binning: [0.,0.5,1.,2.,3.,4.,5.,7.,10.]
+      efffile: ../InputsExp/X3872_ptdep_pp14p0_absy1p44_scenario3_noRICH/eff.root
+      histoeff: eff
+      bkgfile: ../InputsExp/X3872_ptdep_pp14p0_absy1p44_scenario3_noRICH/BkgperEvents.root
+      histobkg: hBkgPerEvent
+      theoryfile: ../InputsTheory/x3872_ptdep_Pyhia8monash_pp14p0_absy1p44.root #this is temporarely the Lc file
+      histoyield: hx3872crossvspt #to be replaced with the name of the jpsi th histogram
+      histoyield_norm: hx3872crossvspt #to be replaced with the name of the jpsi th histogram
