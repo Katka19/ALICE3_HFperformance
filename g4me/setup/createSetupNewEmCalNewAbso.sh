@@ -46,6 +46,8 @@ echo "/detector/pipe/length 200. cm	   " >> $nameSetupFile
 echo "/detector/pipe/thickness 500 um      " >> $nameSetupFile
 echo "#                     " >> $nameSetupFile
 
+
+
 echo "/detector/enable ABSO								                                " >> $nameSetupFile
 echo "###SENSITIVE LAYERS                     " >> $nameSetupFile
 echo "#			   rmin	rmax runit length	length_unit	material add_sd	                      " >> $nameSetupFile
@@ -53,6 +55,27 @@ echo "# First sensitive layer to register what comes out					                   
 echo "/detector/ABSO/addCylinder " $detAfterAbs1Rmin  " "   $detAfterAbs1Rmax  "  cm    600.    cm    G4_Galactic   true  " >> $nameSetupFile
 echo "# Second sensitive layer to register what comes out                                                                      " >> $nameSetupFile
 echo "/detector/ABSO/addCylinder " $detAfterAbs2Rmin  " "   $detAfterAbs2Rmax  "  cm    600.    cm    G4_Galactic   true  " >> $nameSetupFile
+echo "#                     " >> $nameSetupFile
+echo "#                     " >> $nameSetupFile
+echo "### inner tracker           radius      length          thickness " >> $nameSetupFile
+echo "/detector/tracker/addLayer  0.5  cm    16  cm             50. um" >> $nameSetupFile
+echo "/detector/tracker/addLayer  1.2  cm    16  cm             50. um" >> $nameSetupFile
+echo "/detector/tracker/addLayer  2.5  cm    16  cm             50. um" >> $nameSetupFile
+echo "/detector/tracker/addLayer  3.75 cm    16  cm             50. um" >> $nameSetupFile
+echo "#                     " >> $nameSetupFile
+
+echo "### outer tracker           radius      length          thickness" >> $nameSetupFile
+echo "/detector/tracker/addLayer   7. cm      40   cm       500. um" >> $nameSetupFile
+echo "/detector/tracker/addLayer  12. cm      60.  cm       500. um" >> $nameSetupFile
+echo "/detector/tracker/addLayer  20. cm      80.  cm       500. um" >> $nameSetupFile
+echo "/detector/tracker/addLayer  30. cm     120.  cm       500. um" >> $nameSetupFile
+echo "/detector/tracker/addLayer  45. cm     180.  cm       500. um" >> $nameSetupFile
+echo "/detector/tracker/addLayer  60. cm     240.  cm       500. um" >> $nameSetupFile
+echo "/detector/tracker/addLayer  80. cm     320.  cm       500. um" >> $nameSetupFile
+echo "/detector/tracker/addLayer 100. cm     400.  cm       500. um" >> $nameSetupFile
+echo "#                     " >> $nameSetupFile
+echo "#                     " >> $nameSetupFile
+
 
 echo "### EMCAL                                                                                                          " >> $nameSetupFile
 
@@ -121,3 +144,4 @@ echo "#######################	   " >> $nameSetupFile
 echo "				   " >> $nameSetupFile
 echo "### run			   " >> $nameSetupFile
 echo "/run/beamOn " $nEvents "     " >> $nameSetupFile
+
