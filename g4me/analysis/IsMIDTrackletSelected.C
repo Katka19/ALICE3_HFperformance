@@ -1,4 +1,4 @@
-bool IsMIDTrackletSelected(TVector3 posHitLayer1, TVector3 posHitLayer2, ) {
+bool IsMIDTrackletSelected(TVector3 posHitLayer1, TVector3 posHitLayer2) {
 
   TVector3 primVtx(0,0,0);
 
@@ -9,8 +9,8 @@ bool IsMIDTrackletSelected(TVector3 posHitLayer1, TVector3 posHitLayer2, ) {
 //====================================================================================================================================================
 
 bool IsMIDTrackletSelected(TVector3 posHitLayer1, TVector3 posHitLayer2, TVector3 primVtx) {
-
-  // Draft, to be finalized
+  
+  // Draft, to be finalized. PrimVtx can be used to estimate track's eta 
   
   double deltaPhi = posHitLayer1.Phi() - posHitLayer2.Phi();
   double deltaEta = posHitLayer1.Eta() - posHitLayer2.Eta();
