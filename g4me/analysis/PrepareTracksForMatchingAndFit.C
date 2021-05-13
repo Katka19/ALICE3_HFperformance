@@ -176,7 +176,7 @@ void PrepareTracksForMatchingAndFit(const char *inputFileName) {
 
     }
 
-    printf("Ev %4d : %4d ITS tracks and %4d MID tracklets prepared\n",iEv,nPreparedTracksITS,nTrackletsToPrepareMID);
+    printf("Ev %4d : %4d ITS tracks and %4d MID tracklets prepared\n",iEv,nPreparedTracksITS,nPreparedTrackletsMID);
     
     treeOut->Fill();
 
