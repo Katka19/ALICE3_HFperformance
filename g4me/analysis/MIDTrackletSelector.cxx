@@ -4,6 +4,7 @@
 #include "TH2.h"
 #include "TFile.h"
 #include "TVector3.h"
+#include "TMath.h"
 
 MIDTrackletSelector::MIDTrackletSelector() {
 
@@ -70,6 +71,8 @@ bool MIDTrackletSelector::IsMIDTrackletSelected(TVector3 posHitLayer1, TVector3 
   }
   
   double deltaPhi = posHitLayer1.Phi() - posHitLayer2.Phi();
+  if      (deltaPhi < -1*TMath::Pi()) deltaPhi += 2*TMath::Pi();
+  else if (deltaPhi >    TMath::Pi()) deltaPhi -= 2*TMath::Pi();
   double deltaEta = posHitLayer1.Eta() - posHitLayer2.Eta();
   
   if (evalEta) {
@@ -94,14 +97,17 @@ bool MIDTrackletSelector::IsMIDTrackletSelected(TVector3 posHitLayer1, TVector3 
   }
   
   double deltaPhi = posHitLayer1.Phi() - posHitLayer2.Phi();
+  if      (deltaPhi < -1*TMath::Pi()) deltaPhi += 2*TMath::Pi();
+  else if (deltaPhi >    TMath::Pi()) deltaPhi -= 2*TMath::Pi();
   double deltaEta = posHitLayer1.Eta() - posHitLayer2.Eta();
   double eta      = trackITS.Eta();
   double mom      = trackITS.Mag();
   
   if (abs(eta) > mEtaMax) return kFALSE;
-  if (mom < mMomMin)      return kFALSE;
+  if (mom < 1.2)          return kFALSE;
 
   if (mom > mMomMax) mom = mMomMax;
+  if (mom < mMomMin) mom = mMomMin;
   
   double coord[4] = {deltaEta,deltaPhi,eta,mom};
   
