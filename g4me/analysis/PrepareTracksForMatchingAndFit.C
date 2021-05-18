@@ -11,8 +11,10 @@
 #include "TDatabasePDG.h"
 #include "TParticle.h"
 #include "TObjString.h"
+#include "TSystem.h"
+#include "TROOT.h"
 
-#include "IsMIDTrackletSelected.C"
+#include "MIDTrackletSelector.h"
 
 #ifdef __MAKECINT__
 #pragma link C++ class vector<TClonesArray>+;
@@ -36,6 +38,13 @@ Bool_t IsTrackInteresting(Int_t iTrack);
 
 void PrepareTracksForMatchingAndFit(const char *inputFileName) {
 
+  //  gROOT->LoadMacro("MIDTrackletSelector.cxx+");
+  MIDTrackletSelector *trackletSel = new MIDTrackletSelector();
+  if (!(trackletSel -> Setup("muonTrackletAcceptance.root"))) {
+    printf("MID tracklet selector could not be initialized. Quitting.\n");
+    return;
+  }
+  
   style();
 
   const double resolutionITS =   5.e-4;  //   5 um
@@ -150,7 +159,7 @@ void PrepareTracksForMatchingAndFit(const char *inputFileName) {
 	posHitMID2.SetXYZ(io.hits.x[idHitLayer2],io.hits.y[idHitLayer2],io.hits.z[idHitLayer2]);
 	trackIdHitLayer2 = io.hits.trkid[idHitLayer2];
 
-	if (IsMIDTrackletSelected(posHitMID1,posHitMID2)) {
+	if (trackletSel->IsMIDTrackletSelected(posHitMID1,posHitMID2,kFALSE)) {
 
 	  if (trackIdHitLayer1==trackIdHitLayer2) trackletID = trackIdHitLayer1;
 	  else                                    trackletID = -1;
