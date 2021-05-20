@@ -13,6 +13,8 @@
 #include "TObjString.h"
 #include "TSystem.h"
 #include "TROOT.h"
+#include "TRandom.h"
+#include "TDatime.h"
 
 #include "MIDTrackletSelector.h"
 
@@ -37,8 +39,10 @@ Bool_t IsTrackInteresting(Int_t iTrack);
 //====================================================================================================================================================
 
 void PrepareTracksForMatchingAndFit(const char *inputFileName) {
-
-  //  gROOT->LoadMacro("MIDTrackletSelector.cxx+");
+  
+  TDatime t;
+  gRandom->SetSeed(t.GetDate()+t.GetYear()*t.GetHour()*t.GetMinute()*t.GetSecond());
+  
   MIDTrackletSelector *trackletSel = new MIDTrackletSelector();
   if (!(trackletSel -> Setup("muonTrackletAcceptance.root"))) {
     printf("MID tracklet selector could not be initialized. Quitting.\n");
@@ -109,14 +113,14 @@ void PrepareTracksForMatchingAndFit(const char *inputFileName) {
       if (io.hits.lyrid[iHit] == idLayerMID1) arrayHitID_MIDLayer1[nHits_MIDLayer1++] = iHit;
       if (io.hits.lyrid[iHit] == idLayerMID2) arrayHitID_MIDLayer2[nHits_MIDLayer2++] = iHit;
 
-      // filling arrays of hits from ITS tracks (only for interesting tracks)
+      // filling arrays of hits from ITS tracks (only for interesting tracks). Hits from ITS are by definition all the hits having radius < rMaxITS
       
       auto trackID = io.hits.trkid[iHit];
 
       if (!IsTrackInteresting(trackID)) continue;
 
-      pos.SetXYZ(io.hits.x[iHit],io.hits.y[iHit],io.hits.z[iHit]);
-      if (pos.Pt() < rMaxITS) {
+      pos.SetXYZ(gRandom->Gaus(io.hits.x[iHit],resolutionITS),gRandom->Gaus(io.hits.y[iHit],resolutionITS),gRandom->Gaus(io.hits.z[iHit],resolutionITS));
+      if (pos.Perp() < rMaxITS) {
 	new ((allTracksHitPosITS.at(trackID))[(allTracksHitPosITS.at(trackID)).GetEntries()]) TVector3(pos);
 	new ((allTracksHitCovITS.at(trackID))[(allTracksHitCovITS.at(trackID)).GetEntries()]) TMatrixDSym(covITS);
       }
@@ -150,13 +154,13 @@ void PrepareTracksForMatchingAndFit(const char *inputFileName) {
     for (int iHitLayer1=0; iHitLayer1<nHits_MIDLayer1; iHitLayer1++) {
       
       idHitLayer1 = arrayHitID_MIDLayer1[iHitLayer1];
-      posHitMID1.SetXYZ(io.hits.x[idHitLayer1],io.hits.y[idHitLayer1],io.hits.z[idHitLayer1]);
+      posHitMID1.SetXYZ(gRandom->Gaus(io.hits.x[idHitLayer1],resolutionMID),gRandom->Gaus(io.hits.y[idHitLayer1],resolutionMID),gRandom->Gaus(io.hits.z[idHitLayer1],resolutionMID));
       trackIdHitLayer1 = io.hits.trkid[idHitLayer1];
 
       for (int iHitLayer2=0; iHitLayer2<nHits_MIDLayer2; iHitLayer2++) {
 
 	idHitLayer2 = arrayHitID_MIDLayer2[iHitLayer2];
-	posHitMID2.SetXYZ(io.hits.x[idHitLayer2],io.hits.y[idHitLayer2],io.hits.z[idHitLayer2]);
+	posHitMID2.SetXYZ(gRandom->Gaus(io.hits.x[idHitLayer2],resolutionMID),gRandom->Gaus(io.hits.y[idHitLayer2],resolutionMID),gRandom->Gaus(io.hits.z[idHitLayer2],resolutionMID));
 	trackIdHitLayer2 = io.hits.trkid[idHitLayer2];
 
 	if (trackletSel->IsMIDTrackletSelected(posHitMID1,posHitMID2,kFALSE)) {

@@ -70,9 +70,7 @@ bool MIDTrackletSelector::IsMIDTrackletSelected(TVector3 posHitLayer1, TVector3 
     return kFALSE;
   }
   
-  double deltaPhi = posHitLayer1.Phi() - posHitLayer2.Phi();
-  if      (deltaPhi < -1*TMath::Pi()) deltaPhi += 2*TMath::Pi();
-  else if (deltaPhi >    TMath::Pi()) deltaPhi -= 2*TMath::Pi();
+  double deltaPhi = posHitLayer1.DeltaPhi(posHitLayer2);
   double deltaEta = posHitLayer1.Eta() - posHitLayer2.Eta();
   
   if (evalEta) {
@@ -96,9 +94,7 @@ bool MIDTrackletSelector::IsMIDTrackletSelected(TVector3 posHitLayer1, TVector3 
     return kFALSE;
   }
   
-  double deltaPhi = posHitLayer1.Phi() - posHitLayer2.Phi();
-  if      (deltaPhi < -1*TMath::Pi()) deltaPhi += 2*TMath::Pi();
-  else if (deltaPhi >    TMath::Pi()) deltaPhi -= 2*TMath::Pi();
+  double deltaPhi = posHitLayer1.DeltaPhi(posHitLayer2);
   double deltaEta = posHitLayer1.Eta() - posHitLayer2.Eta();
   double eta      = trackITS.Eta();
   double mom      = trackITS.Mag();
@@ -117,6 +113,24 @@ bool MIDTrackletSelector::IsMIDTrackletSelected(TVector3 posHitLayer1, TVector3 
   
   return kFALSE;
   
+}
+
+//====================================================================================================================================================
+
+bool MIDTrackletSelector::IsMIDTrackletSelected(TVector3 posHitLayer1, TVector3 posHitLayer2, TVector3 trackITS, TVector3 posITStrackLayer1, int charge=0) {
+
+  if (!mIsSelectorSetup) {
+    printf("ERROR: MIDTrackletSelector not initialized\n");
+    return kFALSE;
+  }
+
+  double deltaPhiITS = posITStrackLayer1.DeltaPhi(posHitLayer1);
+  double deltaEtaITS = posITStrackLayer1.Eta() - posHitLayer1.Eta();
+  
+  if (TMath::Sqrt(deltaPhiITS*deltaPhiITS + deltaEtaITS*deltaEtaITS) > 0.2) return kFALSE;
+
+  return IsMIDTrackletSelected(posHitLayer1, posHitLayer2, trackITS, charge);
+    
 }
 
 //====================================================================================================================================================
