@@ -47,7 +47,7 @@
 
 #include "MIDTrackletSelector.h"
 
-enum part_t{kElectron, kMuon, kPion, kKaon, kProton, kNPartTypes};
+enum part_t{kMIDElectron, kMIDMuon, kMIDPion, kMIDKaon, kMIDProton, kNPartTypes};
 const int pdgCode[kNPartTypes] = {11, 13, 211, 321, 2212};
 const char* partName[kNPartTypes] = {"electron", "muon", "pion", "kaon", "proton"};
 
@@ -301,7 +301,7 @@ void StudyMuonMatchingChi2(const char *inputFileName,
 	  nHitsGlobal++;
 	}
 
-	myCandGlobal.setPosMomSeedAndPdgCode(vtx, momIni, pdg);
+	myCandGlobal.setPosMomSeedAndPdgCode(vtx, fittedMomAtVtx, pdg);
 	myCandGlobal.setCovSeed(covSeed);
 	
 	genfit::AbsTrackRep* repGlobal = new genfit::RKTrackRep(pdg);
@@ -374,7 +374,7 @@ void StudyMuonMatchingChi2(const char *inputFileName,
     
     if (iEvent < 100 && display) {
       // add tracks to event display
-      display->addEvent(fitTracksGlobal[kMuon][kGoodMatch]);
+      display->addEvent(fitTracksGlobal[kMIDMuon][kGoodMatch]);
     }
 
 
