@@ -38,7 +38,7 @@ Bool_t IsTrackInteresting(Int_t iTrack);
 
 //====================================================================================================================================================
 
-void PrepareTracksForMatchingAndFit(const char *inputFileName) {
+void PrepareTracksForMatchingAndFit(const char *inputFileName, const double hitMinP = 0.050) {
   
   TDatime t;
   gRandom->SetSeed(t.GetDate()+t.GetYear()*t.GetHour()*t.GetMinute()*t.GetSecond());
@@ -78,7 +78,7 @@ void PrepareTracksForMatchingAndFit(const char *inputFileName) {
   treeOut->Branch("idTrackITS",              &idTrackITS);
   treeOut->Branch("idTrackMID",              &idTrackMID);
 
-  TVector3 pos;
+  TVector3 pos, mom;
   TMatrixDSym covITS(3);
   for (int i=0; i<3; i++) covITS(i,i) = resolutionITS*resolutionITS;
   TMatrixDSym covMID(3);
@@ -109,6 +109,9 @@ void PrepareTracksForMatchingAndFit(const char *inputFileName) {
     for (int iHit=0; iHit<io.hits.n; iHit++) {
 
       // filling arrays of hit IDs from MID layers (coming from any tracks)
+
+      mom.SetXYZ(io.hits.px[iHit],io.hits.py[iHit],io.hits.pz[iHit]);
+      if (mom.Mag() < hitMinP) continue;
 
       if (io.hits.lyrid[iHit] == idLayerMID1) arrayHitID_MIDLayer1[nHits_MIDLayer1++] = iHit;
       if (io.hits.lyrid[iHit] == idLayerMID2) arrayHitID_MIDLayer2[nHits_MIDLayer2++] = iHit;

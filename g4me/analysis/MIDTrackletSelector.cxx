@@ -100,7 +100,6 @@ bool MIDTrackletSelector::IsMIDTrackletSelected(TVector3 posHitLayer1, TVector3 
   double mom      = trackITS.Mag();
   
   if (abs(eta) > mEtaMax) return kFALSE;
-  if (mom < 1.2)          return kFALSE;
 
   if (mom > mMomMax) mom = mMomMax;
   if (mom < mMomMin) mom = mMomMin;
