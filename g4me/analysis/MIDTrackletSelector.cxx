@@ -120,7 +120,7 @@ bool MIDTrackletSelector::IsMIDTrackletSelected(TVector3 posHitLayer1, TVector3 
 
   if (!mIsSelectorSetup) {
     printf("ERROR: MIDTrackletSelector not initialized\n");
-    return kFALSE;
+    return kFALSE; 
   }
 
   double deltaPhiITS = posITStrackLayer1.DeltaPhi(posHitLayer1);
