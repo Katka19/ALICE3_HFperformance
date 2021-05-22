@@ -21,6 +21,7 @@ public:
   bool Setup(const Char_t *nameInputFile);
   bool IsSelectorSetup() { return mIsSelectorSetup; }
   bool IsMIDTrackletSelected(TVector3 posHitLayer1, TVector3 posHitLayer2, bool evalEta);
+  bool IsMIDTrackletSelected(TVector3 posHitLayer1, TVector3 posHitLayer2, TVector3 posITStrackLayer1, bool evalEta);
   bool IsMIDTrackletSelected(TVector3 posHitLayer1, TVector3 posHitLayer2, TVector3 trackITS, int charge);
   bool IsMIDTrackletSelected(TVector3 posHitLayer1, TVector3 posHitLayer2, TVector3 trackITS, TVector3 posITStrackLayer1, int charge);
 

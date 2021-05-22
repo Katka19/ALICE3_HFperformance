@@ -94,6 +94,30 @@ bool MIDTrackletSelector::IsMIDTrackletSelected(TVector3 posHitLayer1, TVector3 
 
 //====================================================================================================================================================
 
+bool MIDTrackletSelector::IsMIDTrackletSelected(TVector3 posHitLayer1, TVector3 posHitLayer2, TVector3 posITStrackLayer1, bool evalEta=kFALSE) {
+
+  if (!mIsSelectorSetup) {
+    printf("ERROR: MIDTrackletSelector not initialized\n");
+    return kFALSE;
+  }
+
+  if (posHitLayer1.Perp() > posHitLayer2.Perp()) {
+    TVector3 tmp = posHitLayer1;
+    posHitLayer1 = posHitLayer2;
+    posHitLayer2 = tmp;
+  }
+
+  double deltaPhiITS = posITStrackLayer1.DeltaPhi(posHitLayer1);
+  double deltaEtaITS = posITStrackLayer1.Eta() - posHitLayer1.Eta();
+  
+  if (TMath::Sqrt(deltaPhiITS*deltaPhiITS + deltaEtaITS*deltaEtaITS) > 0.2) return kFALSE;
+
+  return IsMIDTrackletSelected(posHitLayer1, posHitLayer2, evalEta);
+  
+}
+
+//====================================================================================================================================================
+
 bool MIDTrackletSelector::IsMIDTrackletSelected(TVector3 posHitLayer1, TVector3 posHitLayer2, TVector3 trackITS, int charge=0) {
 
   if (!mIsSelectorSetup) {
