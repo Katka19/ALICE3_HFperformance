@@ -34,11 +34,12 @@ const double rMaxITS = 110;  // (in cm). Above this radius, hits are not conside
 
 TTree *treeOut = 0;
 
+Bool_t IsTrackCharged(Int_t iTrack);
 Bool_t IsTrackInteresting(Int_t iTrack);
 
 //====================================================================================================================================================
 
-void PrepareTracksForMatchingAndFit(const char *inputFileName, const double hitMinP = 0.050) {
+void PrepareTracksForMatchingAndFit(const char *inputFileName, const char *outputFileName, const double hitMinP = 0.050) {
   
   TDatime t;
   gRandom->SetSeed(t.GetDate()+t.GetYear()*t.GetHour()*t.GetMinute()*t.GetSecond());
@@ -59,7 +60,7 @@ void PrepareTracksForMatchingAndFit(const char *inputFileName, const double hitM
 
   int nPreparedTracksITS=0, nHits_MIDLayer1=0, nHits_MIDLayer2=0, nPreparedTrackletsMID=0;
 
-  TFile *fileOut = new TFile("trackCandidates.root","recreate");
+  TFile *fileOut = new TFile(outputFileName,"recreate");
   treeOut = new TTree("TracksToBeFitted","Tracks to be fitted");
 
   TClonesArray trackCandidatesHitPosITS("TClonesArray");     // array of hit position arrays (for the ITS tracks)  
@@ -108,19 +109,22 @@ void PrepareTracksForMatchingAndFit(const char *inputFileName, const double hitM
     
     for (int iHit=0; iHit<io.hits.n; iHit++) {
 
-      // filling arrays of hit IDs from MID layers (coming from any tracks)
+      // filling arrays of hit IDs from MID layers (coming from any charged tracks)
 
+      auto trackID = io.hits.trkid[iHit];
+
+      if (!(IsTrackCharged(trackID))) continue;
+      
       mom.SetXYZ(io.hits.px[iHit],io.hits.py[iHit],io.hits.pz[iHit]);
       if (mom.Mag() < hitMinP) continue;
 
       if (io.hits.lyrid[iHit] == idLayerMID1) arrayHitID_MIDLayer1[nHits_MIDLayer1++] = iHit;
       if (io.hits.lyrid[iHit] == idLayerMID2) arrayHitID_MIDLayer2[nHits_MIDLayer2++] = iHit;
 
-      // filling arrays of hits from ITS tracks (only for interesting tracks). Hits from ITS are by definition all the hits having radius < rMaxITS
+      // filling arrays of hits from ITS tracks (only for interesting tracks: charged and primary).
+      // Hits from ITS are by definition all the hits having radius < rMaxITS
       
-      auto trackID = io.hits.trkid[iHit];
-
-      if (!IsTrackInteresting(trackID)) continue;
+      if (!(IsTrackInteresting(trackID))) continue;
 
       pos.SetXYZ(gRandom->Gaus(io.hits.x[iHit],resolutionITS),gRandom->Gaus(io.hits.y[iHit],resolutionITS),gRandom->Gaus(io.hits.z[iHit],resolutionITS));
       if (pos.Perp() < rMaxITS) {
@@ -206,13 +210,23 @@ void PrepareTracksForMatchingAndFit(const char *inputFileName, const double hitM
 
 Bool_t IsTrackInteresting(Int_t iTrack) {
 
+  if (!(IsTrackCharged(iTrack)))            return kFALSE;
+  if (!(io.tracks.parent[iTrack] == -1))    return kFALSE;
+
+  return kTRUE;
+
+}
+
+//====================================================================================================================================================
+
+Bool_t IsTrackCharged(Int_t iTrack) {
+
   if (iTrack<0 || iTrack>=io.tracks.n) {
     printf("ERROR: track index %d out of range (io.tracks.n = %d)\n",iTrack,io.tracks.n);
     return kFALSE;
   }
   if (!(TDatabasePDG::Instance()->GetParticle(io.tracks.pdg[iTrack])))                          return kFALSE;
   if (TMath::Abs(TDatabasePDG::Instance()->GetParticle(io.tracks.pdg[iTrack])->Charge()) < 0.1) return kFALSE;
-  if (!(io.tracks.parent[iTrack] == -1))                                                        return kFALSE;
 
   return kTRUE;
 

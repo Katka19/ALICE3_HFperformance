@@ -94,7 +94,7 @@ bool MIDTrackletSelector::IsMIDTrackletSelected(TVector3 posHitLayer1, TVector3 
 
 //====================================================================================================================================================
 
-bool MIDTrackletSelector::IsMIDTrackletSelected(TVector3 posHitLayer1, TVector3 posHitLayer2, TVector3 posITStrackLayer1, bool evalEta=kFALSE) {
+bool MIDTrackletSelector::IsMIDTrackletSelectedWithSearchSpot(TVector3 posHitLayer1, TVector3 posHitLayer2, TVector3 posITStrackLayer1, bool evalEta=kFALSE) {
 
   if (!mIsSelectorSetup) {
     printf("ERROR: MIDTrackletSelector not initialized\n");
@@ -153,7 +153,7 @@ bool MIDTrackletSelector::IsMIDTrackletSelected(TVector3 posHitLayer1, TVector3 
 
 //====================================================================================================================================================
 
-bool MIDTrackletSelector::IsMIDTrackletSelected(TVector3 posHitLayer1, TVector3 posHitLayer2, TVector3 trackITS, TVector3 posITStrackLayer1, int charge=0) {
+bool MIDTrackletSelector::IsMIDTrackletSelectedWithSearchSpot(TVector3 posHitLayer1, TVector3 posHitLayer2, TVector3 trackITS, TVector3 posITStrackLayer1, int charge=0) {
 
   if (!mIsSelectorSetup) {
     printf("ERROR: MIDTrackletSelector not initialized\n");
