@@ -63,6 +63,8 @@ THnSparse *hDistanceFromGoodHitAtLayerMID1[kNPartTypes]={0};
 TH3D *hChi2VsMomVsEtaMatchedTracks[kNPartTypes][2]={{0}};
 TH2D *hMomVsEtaITSTracks[kNPartTypes]={0};
 
+const int nMaxHelixSteps = 100;
+
 void BookHistos();
 
 void CircleFit(double x1, double y1, double x2, double y2, double x3, double y3, double &radius);
@@ -77,6 +79,7 @@ void EstimateInitialMomentum(genfit::mySpacepointDetectorHit* hitMin,
 //====================================================================================================================================================
 
 void StudyMuonMatchingChi2(const char *inputFileName,
+			   const char *outputFileName,
 			   int pdg = -13,
 			   bool displayTracks = kTRUE,
 			   const char *geoFileName = "g4meGeometry.muon.root",
@@ -147,13 +150,11 @@ void StudyMuonMatchingChi2(const char *inputFileName,
   int nEvents = treeIn->GetEntries();
 
   // main loop
-  
+
   for (int iEvent=0; iEvent<nEvents; iEvent++) {
-  //  for (int iEvent=0; iEvent<20000; iEvent++) {
 
-    //    if (iEvent==242) continue;
-
-    if (!(iEvent%100)) printf("\n----------- iEv = %5d of %5d ----------------\n",iEvent,nEvents);
+    //    if (!(iEvent%100)) printf("\n----------- iEv = %5d of %5d ----------------\n",iEvent,nEvents);
+    printf("\n----------- iEv = %5d of %5d ----------------\n",iEvent,nEvents);
 
     treeIn->GetEntry(iEvent);
 
@@ -162,10 +163,12 @@ void StudyMuonMatchingChi2(const char *inputFileName,
 
     vector<vector<vector<genfit::Track*>>> fitTracksGlobal(kNPartTypes,vector<vector<genfit::Track*>>(2));   // for drawing purposes only
     vector<vector<genfit::Track*>>         fitTracksITS(kNPartTypes);                                        // for drawing purposes only
-    
+
     for (int iTrackITS=0; iTrackITS<nTracksITS; iTrackITS++) {
 
+      bool fitITSConverged = kFALSE;
       double charge = 1.;   // abs value of muon charge
+      TVector3 posAtLayerMID1, fittedMomAtVtx;
       
       myDetectorHitArrayITS.Clear();
 
@@ -193,7 +196,7 @@ void StudyMuonMatchingChi2(const char *inputFileName,
       vtx.SetXYZ(gRandom->Gaus(part->Vx(),primVtxResolution),
 		 gRandom->Gaus(part->Vy(),primVtxResolution),
 		 gRandom->Gaus(part->Vz(),primVtxResolution));
-    
+
       TVector3 momIni;
 
       EstimateInitialMomentum((genfit::mySpacepointDetectorHit*)myDetectorHitArrayITS[0],
@@ -218,7 +221,7 @@ void StudyMuonMatchingChi2(const char *inputFileName,
       // create track
       genfit::AbsTrackRep* repITS = new genfit::RKTrackRep(pdg);
       genfit::Track fitTrackITS(myCandITS, factoryITS, repITS);
-      
+
       // do the fit: ITS track -------------------
 
       try {
@@ -229,28 +232,33 @@ void StudyMuonMatchingChi2(const char *inputFileName,
 	std::cerr << "Exception, next track" << std::endl;
 	continue;
       }
-      
+
       fitTrackITS.checkConsistency();
 
-      double chi2OverNDF_ITS = fitTrackITS.getFitStatus(repITS)->getChi2()/fitTrackITS.getFitStatus(repITS)->getNdf();
+      if (fitTrackITS.getFitStatus(repITS)->isFitConverged()) fitITSConverged = kTRUE;
 
-      genfit::MeasuredStateOnPlane fittedStateITS(fitTrackITS.getFittedState(0,repITS));
+      if (fitITSConverged) {
 
-      // estimating kinematics at primary vertex
-      fittedStateITS.extrapolateToPoint(vtx);
-      TVector3 fittedMomAtVtx = fittedStateITS.getMom();
+	genfit::MeasuredStateOnPlane fittedStateITS(fitTrackITS.getFittedState(0,repITS));
 
-      // estimating position at first MID layer
-      // (I use a simple helix model which doesn't take into account propagation in materials. A proper way to do it would be fittedStateITS.extrapolateToCylinder(rLayerMID1)
-      // but unfortunately the method crashes when a track is absorbed in the materials and doesn't manage to arrive the requested MID layer)
-      genfit::HelixTrackModel helix(vtx, fittedMomAtVtx, charge);
-      double length = 0;
-      double deltaR = rLayerMID1;
-      TVector3 posAtLayerMID1(0,0,0);
-      while (deltaR > 1) {    // 1 cm tolerance for the radial distance between the MID layer and the effective extrapolation radius of the helix
-	length += deltaR;
-	posAtLayerMID1 = helix.getPos(length);
-	deltaR = rLayerMID1 - posAtLayerMID1.Perp();
+	// estimating kinematics at primary vertex
+	fittedStateITS.extrapolateToPoint(vtx);
+	fittedMomAtVtx = fittedStateITS.getMom();
+      
+	// estimating position at first MID layer
+	// (I use a simple helix model which doesn't take into account propagation in materials. A proper way to do it would be fittedStateITS.extrapolateToCylinder(rLayerMID1)
+	// but unfortunately the method crashes when a track is absorbed in the materials and doesn't manage to arrive the requested MID layer)
+	genfit::HelixTrackModel helix(vtx, fittedMomAtVtx, charge);
+	double length = 0;
+	double deltaR = rLayerMID1;
+	int nSteps = 0;
+	while (deltaR > 1 && nSteps < nMaxHelixSteps) {    // 1 cm tolerance for the radial distance between the MID layer and the effective extrapolation radius of the helix
+	  length += deltaR;
+	  posAtLayerMID1 = helix.getPos(length);
+	  deltaR = rLayerMID1 - posAtLayerMID1.Perp();
+	  nSteps++;
+	}
+
       }
       
       // do the fit: Global track -------------------
@@ -260,19 +268,26 @@ void StudyMuonMatchingChi2(const char *inputFileName,
       genfit::Track *bestGlobalTrack=0;
       TVector3 goodHitAtLayerMID1;
       bool goodTrackletExists = kFALSE;
-      
+
+      int nSelTracklets = 0;
+
       for (int iTrackletMID=0; iTrackletMID<nTrackletsMID; iTrackletMID++) {
 
-	myDetectorHitArrayGlobal.Clear();
+	if (!fitITSConverged) continue;
 	
+	myDetectorHitArrayGlobal.Clear();
+
 	hitsPosMID = (TClonesArray*) trackCandidatesHitPosMID->At(iTrackletMID);
 	hitsCovMID = (TClonesArray*) trackCandidatesHitCovMID->At(iTrackletMID);
 
 	int nMeasurementsMID = hitsPosMID->GetEntries();
 	if (nMeasurementsMID != 2) continue;
 
-	if (!(trackletSel->IsMIDTrackletSelected(*((TVector3*)hitsPosMID->At(0)),*((TVector3*)hitsPosMID->At(1)),fittedMomAtVtx,posAtLayerMID1,charge))) continue;
-		
+	//	if (!(trackletSel->IsMIDTrackletSelected(*((TVector3*)hitsPosMID->At(0)),*((TVector3*)hitsPosMID->At(1)),fittedMomAtVtx,posAtLayerMID1,charge))) continue;
+	if (!(trackletSel->IsMIDTrackletSelectedWithSearchSpot(*((TVector3*)hitsPosMID->At(0)),*((TVector3*)hitsPosMID->At(1)),posAtLayerMID1,kFALSE))) continue;
+
+	nSelTracklets++;
+	
 	// TrackCand
 	genfit::TrackCand myCandGlobal;
 
@@ -330,6 +345,8 @@ void StudyMuonMatchingChi2(const char *inputFileName,
 
       }
 
+      //      printf("%3d selected tracklets out of %3d\n",nSelTracklets,nTrackletsMID);
+
       int pdgCodePart = TMath::Abs(part->GetPdgCode());
       double momPart  = part->P();
       double etaPart  = part->Eta();
@@ -379,18 +396,18 @@ void StudyMuonMatchingChi2(const char *inputFileName,
 
 
   } // end loop over events
-  
+
   delete fitter;
   
-  TFile *fileOut = new TFile("histosTracking.root","recreate");
+  TFile *fileOut = new TFile(outputFileName,"recreate");
   for (int iPart=0; iPart<kNPartTypes; iPart++) {
     hMomVsEtaITSTracks[iPart] -> Write();
     hDistanceFromGoodHitAtLayerMID1[iPart] -> Write();
     for (int iMatch=0; iMatch<2; iMatch++) {
       hChi2VsMomVsEtaMatchedTracks[iPart][iMatch] -> Write();
     }
-  }  
-  
+  }
+
   fileOut -> Close(); 
 
   // open event display
@@ -401,11 +418,31 @@ void StudyMuonMatchingChi2(const char *inputFileName,
 //====================================================================================================================================================
 
 void BookHistos() {
+
+  // non-uniform p binning
+  
+  const int nMomBins = 36;
+  const double momBinCenter[nMomBins] = {1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0,
+				       2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7, 2.8, 2.9, 3.0,
+				       3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 3.7, 3.8, 3.9, 4.0,
+				       4.5, 5.0, 6.0, 7.0, 8.0, 10.};
+
+  double momBinLimits[nMomBins+1] = {0};
+  momBinLimits[0] = momBinCenter[0] - 0.5*(momBinCenter[1]-momBinCenter[0]);
+  for (int iMomBin=0; iMomBin<nMomBins-1; iMomBin++) momBinLimits[iMomBin+1] = 0.5 * (momBinCenter[iMomBin]+momBinCenter[iMomBin+1]);
+  momBinLimits[nMomBins] = momBinCenter[nMomBins-1] + 0.5*(momBinCenter[nMomBins-1]-momBinCenter[nMomBins-2]);
+  
+  // uniform eta binning
+
+  const int nEtaBins = 33;
+  const double etaMin = -1.65;
+  const double etaMax =  1.65;
   
   for (int iPart=0; iPart<kNPartTypes; iPart++) {
 
     hMomVsEtaITSTracks[iPart] = new TH2D(Form("hMomVsEtaITSTracks_%s",partName[iPart]),Form("hMomVsEtaITSTracks_%s",partName[iPart]),
-					 33,-1.65,1.65,100,0.5,10.5);
+					 nEtaBins,etaMin,etaMax,nMomBins,momBinLimits[0],momBinLimits[nMomBins]);
+    hMomVsEtaITSTracks[iPart] -> GetYaxis() -> Set(nMomBins,momBinLimits);
 
     hMomVsEtaITSTracks[iPart] -> Sumw2();
     hMomVsEtaITSTracks[iPart] -> SetXTitle("#eta");	    
@@ -414,7 +451,9 @@ void BookHistos() {
     for (int iMatch=0; iMatch<2; iMatch++) {
       hChi2VsMomVsEtaMatchedTracks[iPart][iMatch] = new TH3D(Form("hChi2VsMomVsEtaMatchedTracks_%s_%s",partName[iPart],tagMatch[iMatch]),
 							     Form("hChi2VsMomVsEtaMatchedTracks_%s_%s",partName[iPart],tagMatch[iMatch]),
-							     200,0,20,33,-1.65,1.65,100,0.5,10.5);
+							     200,0,20,nEtaBins,etaMin,etaMax,nMomBins,momBinLimits[0],momBinLimits[nMomBins]);
+      hChi2VsMomVsEtaMatchedTracks[iPart][iMatch] -> GetZaxis() -> Set(nMomBins,momBinLimits);
+      
       hChi2VsMomVsEtaMatchedTracks[iPart][iMatch] -> Sumw2();
       hChi2VsMomVsEtaMatchedTracks[iPart][iMatch] -> SetXTitle(Form("#chi^{2}/ndf (%s, %s)",partName[iPart],tagMatch[iMatch]));
       hChi2VsMomVsEtaMatchedTracks[iPart][iMatch] -> SetYTitle("#eta");	    
@@ -422,13 +461,15 @@ void BookHistos() {
       
     }
 
-    int nBins[4] = {300,300,33,100};
-    double xMin[4] = {-0.3, -0.3, -1.65,  0.5};
-    double xMax[4] = { 0.3,  0.3,  1.65, 10.5};
+    int nBins[4] = {300,300,nEtaBins,nMomBins};
+    double xMin[4] = {-0.3, -0.3, etaMin, momBinLimits[0]};
+    double xMax[4] = { 0.3,  0.3, etaMax, momBinLimits[nMomBins]};
     
     hDistanceFromGoodHitAtLayerMID1[iPart] = new THnSparseD(Form("hDistanceFromGoodHitAtLayerMID1_%s",partName[iPart]),
 							    Form("hDistanceFromGoodHitAtLayerMID1_%s",partName[iPart]),
 							    4, nBins,xMin,xMax);
+    hDistanceFromGoodHitAtLayerMID1[iPart] -> GetAxis(3) -> Set(nMomBins,momBinLimits);
+    
     hDistanceFromGoodHitAtLayerMID1[iPart] -> GetAxis(0) -> SetTitle("#Delta#eta");
     hDistanceFromGoodHitAtLayerMID1[iPart] -> GetAxis(1) -> SetTitle("#Delta#phi");
     hDistanceFromGoodHitAtLayerMID1[iPart] -> GetAxis(2) -> SetTitle("#eta");

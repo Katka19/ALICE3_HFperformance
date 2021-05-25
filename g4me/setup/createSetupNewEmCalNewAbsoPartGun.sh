@@ -47,7 +47,6 @@ echo "/detector/pipe/thickness 500 um      " >> $nameSetupFile
 echo "#                     " >> $nameSetupFile
 
 
-
 echo "/detector/enable ABSO								                                " >> $nameSetupFile
 echo "###SENSITIVE LAYERS                     " >> $nameSetupFile
 echo "#			   rmin	rmax runit length	length_unit	material add_sd	                      " >> $nameSetupFile
