@@ -42,7 +42,11 @@ Bool_t IsTrackInteresting(struct IO_t * , Int_t iTrack);
 
 //====================================================================================================================================================
 
-void PrepareTracksForMatchingAndFit_embedding(const char *inputFileName_underlying, const char *inputFileName_signal, const char *outputFileName, const double hitMinP = 0.050) {
+void PrepareTracksForMatchingAndFit_embedding(const char *inputFileName_underlying,
+					      const char *inputFileName_signal,
+					      const char *outputFileName,
+					      const bool prepareUnderlyingITS = kFALSE,
+					      const double hitMinP = 0.050) {
 
   TDatime t;
   gRandom->SetSeed(t.GetDate()+t.GetYear()*t.GetHour()*t.GetMinute()*t.GetSecond());
@@ -120,7 +124,8 @@ void PrepareTracksForMatchingAndFit_embedding(const char *inputFileName_underlyi
     nHits_MIDLayer2 = 0;
 
     //--------------------------------------------------------------------------
-    // Loop over pythia hits
+    // Loop over underlying event hits
+    
     for (int iHit=0; iHit<io_underlying.hits.n; iHit++) {
 
       //filling arrays of hit IDs from MID layers (coming from any charged tracks)
@@ -143,40 +148,48 @@ void PrepareTracksForMatchingAndFit_embedding(const char *inputFileName_underlyi
         arrayHitTrackID_MIDLayer2[nHits_MIDLayer2++] = trackID;
       }
 
-      // filling arrays of hits from ITS tracks (only for interesting tracks: charged and primary).
-      // Hits from ITS are by definition all the hits having radius < rMaxITS
-      if (!(IsTrackInteresting(&io_underlying, trackID))) continue;
-
-      pos.SetXYZ(gRandom->Gaus(io_underlying.hits.x[iHit],resolutionITS),gRandom->Gaus(io_underlying.hits.y[iHit],resolutionITS),gRandom->Gaus(io_underlying.hits.z[iHit],resolutionITS));
-      if (pos.Perp() < rMaxITS) {
-	       new ((allTracksHitPosITS.at(trackID))[(allTracksHitPosITS.at(trackID)).GetEntries()]) TVector3(pos);
-	       new ((allTracksHitCovITS.at(trackID))[(allTracksHitCovITS.at(trackID)).GetEntries()]) TMatrixDSym(covITS);
+      if (prepareUnderlyingITS) {
+	
+	// filling arrays of hits from ITS tracks (only for interesting tracks: charged and primary).
+	// Hits from ITS are by definition all the hits having radius < rMaxITS
+	if (!(IsTrackInteresting(&io_underlying, trackID))) continue;
+	
+	pos.SetXYZ(gRandom->Gaus(io_underlying.hits.x[iHit],resolutionITS),gRandom->Gaus(io_underlying.hits.y[iHit],resolutionITS),gRandom->Gaus(io_underlying.hits.z[iHit],resolutionITS));
+	if (pos.Perp() < rMaxITS) {
+	  new ((allTracksHitPosITS.at(trackID))[(allTracksHitPosITS.at(trackID)).GetEntries()]) TVector3(pos);
+	  new ((allTracksHitCovITS.at(trackID))[(allTracksHitCovITS.at(trackID)).GetEntries()]) TMatrixDSym(covITS);
+	}
       }
+
     }
 
     // filling the final arrays with the hit information from good ITS tracks
 
     nPreparedTracksITS = 0;
 
-    for (int iTrack=0; iTrack<io_underlying.tracks.n; iTrack++) {
-      if (IsTrackInteresting(&io_underlying, iTrack)) {
-	       new (trackCandidatesHitPosITS[nPreparedTracksITS]) TClonesArray(allTracksHitPosITS.at(iTrack));
-	       new (trackCandidatesHitCovITS[nPreparedTracksITS]) TClonesArray(allTracksHitCovITS.at(iTrack));
-	       idTrackITS.emplace_back(iTrack);
-	       TParticle part;
-	       part.SetPdgCode(io_underlying.tracks.pdg[iTrack]);
-	       part.SetProductionVertex(io_underlying.tracks.vx[iTrack],io_underlying.tracks.vy[iTrack],io_underlying.tracks.vz[iTrack],io_underlying.tracks.vt[iTrack]);
-	       part.SetMomentum(io_underlying.tracks.px[iTrack],io_underlying.tracks.py[iTrack],io_underlying.tracks.pz[iTrack],io_underlying.tracks.e[iTrack]);
-         new (particlesITS[nPreparedTracksITS]) TParticle(part);
-         nPreparedTracksITS++;
+    if (prepareUnderlyingITS) {
+      for (int iTrack=0; iTrack<io_underlying.tracks.n; iTrack++) {
+	if (IsTrackInteresting(&io_underlying, iTrack)) {
+	  new (trackCandidatesHitPosITS[nPreparedTracksITS]) TClonesArray(allTracksHitPosITS.at(iTrack));
+	  new (trackCandidatesHitCovITS[nPreparedTracksITS]) TClonesArray(allTracksHitCovITS.at(iTrack));
+	  idTrackITS.emplace_back(iTrack);
+	  TParticle part;
+	  part.SetPdgCode(io_underlying.tracks.pdg[iTrack]);
+	  part.SetProductionVertex(io_underlying.tracks.vx[iTrack],io_underlying.tracks.vy[iTrack],io_underlying.tracks.vz[iTrack],io_underlying.tracks.vt[iTrack]);
+	  part.SetMomentum(io_underlying.tracks.px[iTrack],io_underlying.tracks.py[iTrack],io_underlying.tracks.pz[iTrack],io_underlying.tracks.e[iTrack]);
+	  new (particlesITS[nPreparedTracksITS]) TParticle(part);
+	  nPreparedTracksITS++;
+	}
       }
     }
 
     // filling the final arrays with the hit information from selected MID tracklets
 
     // end of loop over pythia tree
+
     //--------------------------------------------------------------------------
-    // Loop over muon hits
+    // Loop over signal event hits
+
     for (int iHit=0; iHit<io_signal.hits.n; iHit++) {
 
       // filling arrays of hit IDs from MID layers (coming from any charged tracks)
@@ -205,8 +218,8 @@ void PrepareTracksForMatchingAndFit_embedding(const char *inputFileName_underlyi
 
       pos.SetXYZ(gRandom->Gaus(io_signal.hits.x[iHit],resolutionITS),gRandom->Gaus(io_signal.hits.y[iHit],resolutionITS),gRandom->Gaus(io_signal.hits.z[iHit],resolutionITS));
       if (pos.Perp() < rMaxITS) {
-	       new ((allTracksHitPosITS.at(trackID + nTracks_underlying))[(allTracksHitPosITS.at(trackID + nTracks_underlying)).GetEntries()]) TVector3(pos);
-	       new ((allTracksHitCovITS.at(trackID + nTracks_underlying))[(allTracksHitCovITS.at(trackID + nTracks_underlying)).GetEntries()]) TMatrixDSym(covITS);
+	new ((allTracksHitPosITS.at(trackID + nTracks_underlying))[(allTracksHitPosITS.at(trackID + nTracks_underlying)).GetEntries()]) TVector3(pos);
+	new ((allTracksHitCovITS.at(trackID + nTracks_underlying))[(allTracksHitCovITS.at(trackID + nTracks_underlying)).GetEntries()]) TMatrixDSym(covITS);
       }
     }
 
@@ -214,18 +227,18 @@ void PrepareTracksForMatchingAndFit_embedding(const char *inputFileName_underlyi
 
     for (int iTrack=0; iTrack<io_signal.tracks.n; iTrack++) {
       if (IsTrackInteresting(&io_signal, iTrack)) {
-	       new (trackCandidatesHitPosITS[nPreparedTracksITS]) TClonesArray(allTracksHitPosITS.at(iTrack + nTracks_underlying));
-	       new (trackCandidatesHitCovITS[nPreparedTracksITS]) TClonesArray(allTracksHitCovITS.at(iTrack + nTracks_underlying));
-	       idTrackITS.emplace_back(iTrack + nTracks_underlying);
-	       TParticle part;
-	       part.SetPdgCode(io_signal.tracks.pdg[iTrack]);
-	       part.SetProductionVertex(io_signal.tracks.vx[iTrack],io_signal.tracks.vy[iTrack],io_signal.tracks.vz[iTrack],io_signal.tracks.vt[iTrack]);
-	       part.SetMomentum(io_signal.tracks.px[iTrack],io_signal.tracks.py[iTrack],io_signal.tracks.pz[iTrack],io_signal.tracks.e[iTrack]);
-         new (particlesITS[nPreparedTracksITS]) TParticle(part);
-         nPreparedTracksITS++;
+	new (trackCandidatesHitPosITS[nPreparedTracksITS]) TClonesArray(allTracksHitPosITS.at(iTrack + nTracks_underlying));
+	new (trackCandidatesHitCovITS[nPreparedTracksITS]) TClonesArray(allTracksHitCovITS.at(iTrack + nTracks_underlying));
+	idTrackITS.emplace_back(iTrack + nTracks_underlying);
+	TParticle part;
+	part.SetPdgCode(io_signal.tracks.pdg[iTrack]);
+	part.SetProductionVertex(io_signal.tracks.vx[iTrack],io_signal.tracks.vy[iTrack],io_signal.tracks.vz[iTrack],io_signal.tracks.vt[iTrack]);
+	part.SetMomentum(io_signal.tracks.px[iTrack],io_signal.tracks.py[iTrack],io_signal.tracks.pz[iTrack],io_signal.tracks.e[iTrack]);
+	new (particlesITS[nPreparedTracksITS]) TParticle(part);
+	nPreparedTracksITS++;
       }
     }
-
+    
     // filling the final arrays with the hit information from selected MID tracklets
     nPreparedTrackletsMID = 0;
     TVector3 posHitMID1, posHitMID2;
@@ -238,30 +251,30 @@ void PrepareTracksForMatchingAndFit_embedding(const char *inputFileName_underlyi
 
       for (int iHitLayer2=0; iHitLayer2<nHits_MIDLayer2; iHitLayer2++) {
 
-         posHitMID2.SetXYZ(gRandom->Gaus(arrayHit_MIDLayer2[iHitLayer2].X(),resolutionMID),gRandom->Gaus(arrayHit_MIDLayer2[iHitLayer2].Y(),resolutionMID),gRandom->Gaus(arrayHit_MIDLayer2[iHitLayer2].Z(),resolutionMID));
-	       trackIdHitLayer2 = arrayHitTrackID_MIDLayer2[iHitLayer2];
+	posHitMID2.SetXYZ(gRandom->Gaus(arrayHit_MIDLayer2[iHitLayer2].X(),resolutionMID),gRandom->Gaus(arrayHit_MIDLayer2[iHitLayer2].Y(),resolutionMID),gRandom->Gaus(arrayHit_MIDLayer2[iHitLayer2].Z(),resolutionMID));
+	trackIdHitLayer2 = arrayHitTrackID_MIDLayer2[iHitLayer2];
 
-	       if (trackletSel->IsMIDTrackletSelected(posHitMID1,posHitMID2,kFALSE)) {
+	if (trackletSel->IsMIDTrackletSelected(posHitMID1,posHitMID2,kFALSE)) {
 
-	          if (trackIdHitLayer1==trackIdHitLayer2) trackletID = trackIdHitLayer1;
-	          else                                    trackletID = -1;
+	  if (trackIdHitLayer1==trackIdHitLayer2) trackletID = trackIdHitLayer1;
+	  else                                    trackletID = -1;
 
-	          TClonesArray trackletMIDpos("TVector3");
-	          TClonesArray trackletMIDcov("TMatrixDSym");
+	  TClonesArray trackletMIDpos("TVector3");
+	  TClonesArray trackletMIDcov("TMatrixDSym");
 
-	          new (trackletMIDpos[trackletMIDpos.GetEntries()]) TVector3(posHitMID1);
-	          new (trackletMIDpos[trackletMIDpos.GetEntries()]) TVector3(posHitMID2);
-	          new (trackletMIDcov[trackletMIDcov.GetEntries()]) TMatrixDSym(covMID);
-	          new (trackletMIDcov[trackletMIDcov.GetEntries()]) TMatrixDSym(covMID);
+	  new (trackletMIDpos[trackletMIDpos.GetEntries()]) TVector3(posHitMID1);
+	  new (trackletMIDpos[trackletMIDpos.GetEntries()]) TVector3(posHitMID2);
+	  new (trackletMIDcov[trackletMIDcov.GetEntries()]) TMatrixDSym(covMID);
+	  new (trackletMIDcov[trackletMIDcov.GetEntries()]) TMatrixDSym(covMID);
 
-	          new (trackCandidatesHitPosMID[nPreparedTrackletsMID]) TClonesArray(trackletMIDpos);
-	          new (trackCandidatesHitCovMID[nPreparedTrackletsMID]) TClonesArray(trackletMIDcov);
+	  new (trackCandidatesHitPosMID[nPreparedTrackletsMID]) TClonesArray(trackletMIDpos);
+	  new (trackCandidatesHitCovMID[nPreparedTrackletsMID]) TClonesArray(trackletMIDcov);
 
-	          idTrackMID.emplace_back(trackletID);
+	  idTrackMID.emplace_back(trackletID);
 
-	          nPreparedTrackletsMID++;
+	  nPreparedTrackletsMID++;
 
-	      }
+	}
       }
     }
     //--------------------------------------------------------------------------
