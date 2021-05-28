@@ -421,12 +421,14 @@ void BookHistos() {
 
   // non-uniform p binning
   
-  const int nMomBins = 36;
-  const double momBinCenter[nMomBins] = {1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0,
-				       2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7, 2.8, 2.9, 3.0,
-				       3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 3.7, 3.8, 3.9, 4.0,
-				       4.5, 5.0, 6.0, 7.0, 8.0, 10.};
-
+  const int nMomBins = 40;
+  const double momBinCenter[nMomBins] = {
+    1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 
+    2.0, 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7, 2.8, 2.9,
+    3.0, 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 3.7, 3.8, 3.9,
+    4.0, 4.5, 5.0, 6.0, 7.0, 8.0, 10., 12., 15., 20.
+  };
+  
   double momBinLimits[nMomBins+1] = {0};
   momBinLimits[0] = momBinCenter[0] - 0.5*(momBinCenter[1]-momBinCenter[0]);
   for (int iMomBin=0; iMomBin<nMomBins-1; iMomBin++) momBinLimits[iMomBin+1] = 0.5 * (momBinCenter[iMomBin]+momBinCenter[iMomBin+1]);
