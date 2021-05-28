@@ -146,7 +146,7 @@ void PrepareTracksForMatchingAndFit(const char *inputFileName, const char *outpu
 	TParticle part;
 	part.SetPdgCode(io.tracks.pdg[iTrack]);
 	part.SetProductionVertex(io.tracks.vx[iTrack],io.tracks.vy[iTrack],io.tracks.vz[iTrack],io.tracks.vt[iTrack]);
-	part.SetMomentum(io.tracks.px[iTrack],io.tracks.py[iTrack],io.tracks.pz[iTrack],0.001*io.tracks.e[iTrack]);
+	part.SetMomentum(io.tracks.px[iTrack],io.tracks.py[iTrack],io.tracks.pz[iTrack],io.tracks.e[iTrack]);
 	new (particlesITS[nPreparedTracksITS]) TParticle(part);
 	nPreparedTracksITS++;
       }
