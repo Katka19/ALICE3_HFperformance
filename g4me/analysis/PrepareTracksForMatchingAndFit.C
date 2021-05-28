@@ -34,6 +34,8 @@ const double rMaxITS = 110;  // (in cm). Above this radius, hits are not conside
 
 TTree *treeOut = 0;
 
+IO_t io;
+
 Bool_t IsTrackCharged(Int_t iTrack);
 Bool_t IsTrackInteresting(Int_t iTrack);
 
