@@ -13,20 +13,32 @@
 
 using namespace std;
 
-enum proc_t{kJpsiToEE, kJpsiToMuMu, kXToPiPiEE, kXToPiPiMuMu, kNChannels};
+enum proc_t{kJpsiToEE, kJpsiToMuMu, kXToPiPiEE, kXToPiPiMuMu, kXicc, kBplus, kNChannels};
 
-const char *hfTaskLabel[kNChannels] = {"jpsi", "jpsiToMuMu", "x", "xToPiPiMuMu"};
-const char *histNameSig[kNChannels] = {"hmassSig", "hMassRecSig", "hMassRecSig", "hMassRecSig"};
-const char *histNameBkg[kNChannels] = {"hmass",    "hMassRecBkg", "hMass",       "hMassRecBkg"};
+const char *hfTaskLabel[kNChannels] = {"jpsi",     "jpsiToMuMu",  "x",           "xToPiPiMuMu", "xicc",     "bplus"};
+const char *histNameSig[kNChannels] = {"hmassSig", "hMassRecSig", "hMassRecSig", "hMassRecSig", "hmassSig", "hMassRecSig"};
+const char *histNameBkg[kNChannels] = {"hmass",    "hMassRecBkg", "hMass",       "hMassRecBkg", "hmass",    "hMass"};
 
-const Double_t massMin[kNChannels]  = {2.60, 2.60, 3.60, 3.60};
-const Double_t massMax[kNChannels]  = {3.55, 3.55, 4.10, 4.10};
+const char *label[kNChannels] = {
+  "J/#psi #rightarrow ee",
+  "J/#psi #rightarrow #mu#mu",
+  "X #rightarrow J/#psi(ee) #pi#pi",
+  "X #rightarrow J/#psi(#mu#mu) #pi#pi",
+  "#Xi_{cc}^{++} #rightarrow #Xi_{c}^{+}#pi^{+}",
+  "B^{+} #rightarrow D^{0}#pi^{+}"
+};
+
+const Double_t massMin[kNChannels]  = {2.60, 2.60, 3.60, 3.60, 3.30, 4.60};
+const Double_t massMax[kNChannels]  = {3.55, 3.55, 4.10, 4.10, 3.90, 6.00};
 
 const Double_t massMean[kNChannels] = {
   TDatabasePDG::Instance()->GetParticle(443)->Mass(),
   TDatabasePDG::Instance()->GetParticle(443)->Mass(),
   3.872,
-  3.872};
+  3.872,
+  TDatabasePDG::Instance()->GetParticle(4412)->Mass(),
+  TDatabasePDG::Instance()->GetParticle(521)->Mass()
+};
 
 const Double_t nsigma = 3;
 
@@ -52,7 +64,7 @@ TF1 *fitBkg[nMaxPtBins]={0}, *fitBkgSideBands[nMaxPtBins]={0}, *fitSig[nMaxPtBin
 Double_t fitPol(Double_t* x_var, Double_t* par);
 Double_t fitPolSideBands(Double_t* x_var, Double_t* par);
 
-void info();
+void info(proc_t channel);
 void mystyle();
 
 void BookCanvas();
@@ -65,7 +77,6 @@ void GetBkgPerEventAndEff(const char* signalfilename,
 			  const proc_t channel) {
   
   mystyle();
-  BookCanvas();
 
   Double_t bkg, errBkg;
   
@@ -78,24 +89,34 @@ void GetBkgPerEventAndEff(const char* signalfilename,
 
   auto dir_sig   = (TDirectory*) input_sig->GetDirectory(Form("hf-task-%s-mc",hfTaskLabel[channel]));
   auto dir_bkg   = (TDirectory*) input_bkg->GetDirectory(Form("hf-task-%s",hfTaskLabel[channel]));
-  
+
   hMassVsPtSig = (TH2D*) dir_sig->Get(histNameSig[channel]);
   hMassVsPtSig -> SetName("hMassVsPtSig");
 
   hMassVsPtBkg = (TH2D*) dir_bkg->Get(histNameBkg[channel]);
   hMassVsPtBkg -> SetName("hMassVsPtBkg");
 
+  Double_t nEventsBkg = -1;
   TH1F *hCount = (TH1F*) input_bkg->Get("qa-global-observables/eventCount");
-  Double_t nEventsBkg = hCount->GetBinContent(1);
-  printf("nEventsBkg = %d\n",Int_t(nEventsBkg));
-  
-  // here we should put some more refined check of consistency for hMassVsPtSig vs hMassVsPtBkg (same pt binning)
-  if (hMassVsPtSig->GetNbinsY() != hMassVsPtBkg->GetNbinsY()) {
-    printf("ERROR: sig and bkg histograms have different numbers of pt bins, quitting.\n");
-    return;
+  if (!hCount) {
+    nEventsBkg = 20e6;
+    printf("\n********* WARNING: cannot retrieve bkg number of events, using nEventsBkg = %d *********\n\n",Int_t(nEventsBkg));
+  }
+  else {
+    nEventsBkg = hCount->GetBinContent(1);
+    printf("nEventsBkg = %d, read from qa-global-observables/eventCount\n",Int_t(nEventsBkg));
   }
   
+  // check of consistency for hMassVsPtSig vs hMassVsPtBkg (same pt binning)
+  TH1D *hTmpSig=hMassVsPtSig->ProjectionY();
+  TH1D *hTmpBkg=hMassVsPtBkg->ProjectionY();
+  if (!(hTmpSig->Add(hTmpBkg))) {
+    printf("ERROR: sig and bkg histograms have different pt binning, quitting.\n");
+    return;
+  }
+
   nPtBins = TMath::Min(hMassVsPtBkg->GetNbinsY(), nMaxPtBins);
+  BookCanvas();
 
   for (int i = 0; i<nPtBins; i++) {
     ptBinLimits[i]   = hMassVsPtSig->GetYaxis()->GetBinLowEdge(i+1);
@@ -115,7 +136,7 @@ void GetBkgPerEventAndEff(const char* signalfilename,
   rp -> Divide(gp);
   
   hEfficiency = (TH1D*) rp -> Clone();
-  hEfficiency -> SetTitle(";p_{T}(J/#psi)(GeV/c); Reconstruction Efficiency");
+  hEfficiency -> SetTitle(";p_{T} (GeV/c); Reconstruction Efficiency");
   hEfficiency -> SetLineColor(kRed);
   hEfficiency -> SetLineWidth(2);
   hEfficiency -> GetYaxis() -> CenterTitle();
@@ -123,7 +144,7 @@ void GetBkgPerEventAndEff(const char* signalfilename,
   cnvEfficiency -> cd();
   hEfficiency->Draw("e");
   
-  info();
+  info(channel);
 
   //-----------------------------------------------------------------------------------------------------------------------------
 
@@ -136,6 +157,8 @@ void GetBkgPerEventAndEff(const char* signalfilename,
     hMassSig[i] = hMassVsPtSig->ProjectionX(Form("hMassSig_PtBin_%d", ptBin), ptBin, ptBin, "e");
     hMassBkg[i] = hMassVsPtBkg->ProjectionX(Form("hMassBkg_PtBin_%d", ptBin), ptBin, ptBin, "e");
 
+    if (hMassSig[i]->GetMaximum() < 20) hMassSig[i]->Rebin(2);
+    
     hMassSig[i]->GetXaxis()->SetRangeUser(massMin[channel], massMax[channel]);
     hMassBkg[i]->GetXaxis()->SetRangeUser(massMin[channel], massMax[channel]);
 
@@ -155,7 +178,7 @@ void GetBkgPerEventAndEff(const char* signalfilename,
 
     cnvSig -> cd(i+1);
 
-    hMassSig[i] -> Fit(fitSig[i],"","",massMean[channel]-5*hMassSig[i]->GetRMS(),massMean[channel]+5*hMassSig[i]->GetRMS());
+    hMassSig[i] -> Fit(fitSig[i],"Q","",massMean[channel]-5*hMassSig[i]->GetRMS(),massMean[channel]+5*hMassSig[i]->GetRMS());
     Double_t sigmaSig = fitSig[i]->GetParameter(2);
 
     sideband[0] = massMean[channel] - nsigma*sigmaSig;
@@ -169,12 +192,12 @@ void GetBkgPerEventAndEff(const char* signalfilename,
     Int_t nPolDegree = 2;
     for (Int_t j=nPolDegree+1; j<=maxPolDegree; j++) fitBkgSideBands[i] -> FixParameter(j,0);
 
-    hMassBkg[i] -> Fit(fitBkgSideBands[i],"","",massMin[channel],massMax[channel]);
+    hMassBkg[i] -> Fit(fitBkgSideBands[i],"Q","",massMin[channel],massMax[channel]);
 
     while (fitBkgSideBands[i]->GetChisquare()/fitBkgSideBands[i]->GetNDF() > chi2OverNDF_limit && nPolDegree < maxPolDegree) {
       nPolDegree++;
       fitBkgSideBands[i] -> ReleaseParameter(nPolDegree);
-      hMassBkg[i] -> Fit(fitBkgSideBands[i],"","",massMin[channel],massMax[channel]);
+      hMassBkg[i] -> Fit(fitBkgSideBands[i],"Q","",massMin[channel],massMax[channel]);
     }
 
     for (Int_t j=0; j<=maxPolDegree; j++) fitBkg[i] -> SetParameter(j, fitBkgSideBands[i] -> GetParameter(j));
@@ -197,7 +220,7 @@ void GetBkgPerEventAndEff(const char* signalfilename,
   cnvBkgperEvents -> cd();
   cnvBkgperEvents -> SetLogy();
   hBkgPerEvent -> Draw("e ][");
-  info();
+  info(channel);
   hBkgPerEvent->Write();
   fileOutBkgPerEvents->Close();
 
@@ -229,22 +252,22 @@ Double_t fitPolSideBands(Double_t* x_var, Double_t* par) {
 
 //====================================================================================================================================================
 
-void info() {
+void info(proc_t channel) {
 
-  TLatex* t = new TLatex(8, 8, "ALICE3 O2 Performance(no PID)");
+  TLatex* t = new TLatex(8, 8, "ALICE3 O2 Performance");
   t->SetNDC();
   t->SetTextSize(0.5);
   t->SetTextAlign(10);
   t->SetTextColor(1);
   t->SetTextSize(0.03);
-  t->DrawLatex(0.5, 0.85, "ALICE3 O2 Performance(no PID)");
+  t->DrawLatex(0.5, 0.85, "ALICE3 O2 Performance");
 
   t->SetTextSize(0.025);
   t->SetTextAlign(12);
   t->DrawLatex(0.5, 0.8, "PYTHIA 8 pp  #sqrt{s} = 14TeV ");
   //  t->DrawLatex(0.5, 0.75, "Inclusive J/#psi #rightarrow ee ");
-  t->DrawLatex(0.5, 0.75, "Inclusive J/#psi #rightarrow #mu#mu ");
-  t->DrawLatex(0.5, 0.7, "|y_{J/#psi}|<= 1.44 ");
+  t->DrawLatex(0.5, 0.75, label[channel]);
+  t->DrawLatex(0.5, 0.7, "kinematic cuts");
 }
 
 //====================================================================================================================================================
@@ -252,10 +275,12 @@ void info() {
 void BookCanvas() {
 
   cnvSig = new TCanvas("cnvSig","Signal fit",2000,800);
-  cnvSig -> Divide(5,2);
+  int nColums = 5;
+  int nRows = (nPtBins-1)/nColums + 1;
+  cnvSig -> Divide(nColums,nRows);
 
   cnvBkg = new TCanvas("cnvBkg","Bkg fit",2000,800);
-  cnvBkg -> Divide(5,2);
+  cnvBkg -> Divide(nColums,nRows);
 
   cnvBkgperEvents = new TCanvas("BkgperEvents","Bkg/nEvents");  
   cnvEfficiency   = new TCanvas("cnvEfficiency","Efficiency",800,600);
