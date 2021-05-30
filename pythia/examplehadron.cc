@@ -116,6 +116,9 @@ int main(int argc, char* argv[]) {
     TH1F*hparticlept = new TH1F("hchargedparticles_pt", ";p_{T};charged particle dN/dp_{T}", nptbins, ptmin, ptmax);
     TH1F*hptyields_unnorm = new TH1F(Form("h%syieldsvspt_unnorm", myhadronname.data()), ";p_{T} (GeV);unnormalized yield (particle+anti)", nptbins, ptmin, ptmax);
     TH1F*hptcross = new TH1F(Form("h%scrossvspt", myhadronname.data()), Form(";p_{T} (GeV);%s d#sigma^{PYTHIA}/dp_{T} (#mu b/GeV)", myhadronlatex.data()), nptbins, ptmin, ptmax);
+    TH1F*hycharmcross = new TH1F("hycharmcross", ";y;%s d#sigma_{c}^{PYTHIA}/dy (#mu b)", 61, -30.5, 30.5);
+    TH1F*hycross = new TH1F("hycross", ";y;%s d#sigma_{HF}^{PYTHIA}/dy (#mu b)", 61, -30.5, 30.5);
+    TH2F*hptycharmcross = new TH2F("hptcharmcross", ";p_{T} (GeV); y", 100, 0., 100.,60, -30., 30.);
 
     // Begin event loop. Generate event. Skip if error. List first one.
     int nmyhadron = 0;
@@ -125,7 +128,14 @@ int main(int argc, char* argv[]) {
 
         for (int i = 0; i < pythia.event.size(); ++i) {
             if(pythia.event[i].pT()<0 || pythia.event[i].pT()>1.e+5) continue;
-            if(pythia.event[i].y()<ymin || pythia.event[i].y()>ymax) continue;
+            if(pythia.event[i].idAbs()==4) {
+		hycharmcross->Fill(pythia.event[i].y());
+	        hptycharmcross->Fill(pythia.event[i].pT(), pythia.event[i].y());
+	    }
+	    if(pythia.event[i].idAbs()==pdgparticle){
+		hycross->Fill(pythia.event[i].y());
+	    }
+	    if(pythia.event[i].y()<ymin || pythia.event[i].y()>ymax) continue;
 
             hparticlept->Fill(pythia.event[i].pT());
             if(pythia.event[i].idAbs()==pdgparticle) {
@@ -147,11 +157,28 @@ int main(int argc, char* argv[]) {
         printf("bin %d, Content %f, binwidth %f\n",ibin, contentmyhadron[ibin], binwidthmyhadron[ibin]);
         hptcross ->SetBinContent(ibin, contentmyhadron[ibin]*norm_fact/binwidthmyhadron[ibin]);
     }
+    const int nbinx = hptycharmcross->GetNbinsX();
+    const int nbiny = hptycharmcross->GetNbinsY();
+
+    double contentmyhadronxy[nbinx][nbinx];
+    double binwidthmyhadronxy[nbinx][nbinx];
+    for(int ibinx=0; ibinx < nbinx; ibinx++){
+        for(int ibiny=0; ibiny < nbiny; ibiny++){
+            contentmyhadronxy[ibinx][ibiny] = hptycharmcross->GetBinContent(ibinx+1, ibiny+1);
+            binwidthmyhadronxy[ibinx][ibiny]= hptycharmcross->GetXaxis()->GetBinWidth(ibinx+1)*hptycharmcross->GetYaxis()->GetBinWidth(ibiny+1);
+            hptycharmcross->SetBinContent(ibinx+1, ibiny+1, contentmyhadronxy[ibinx][ibiny]*norm_fact/binwidthmyhadronxy[ibinx][ibiny]);
+        }
+    }
+    hycharmcross->Scale(norm_fact);
+    hycross->Scale(norm_fact);
     printf("nAccepted %ld, nTried %ld\n", pythia.info.nAccepted(), pythia.info.nTried());
     printf("pythia.info.sigmaGen() %f\n", pythia.info.sigmaGen());
     printf("N myhadron %d", nmyhadron);
     hptcross -> Write();
     hptyields_unnorm->Write();
+    hptycharmcross->Write();
+    hycharmcross->Write();
+    hycross->Write();
     fout->Write();
     return 0;
 }
