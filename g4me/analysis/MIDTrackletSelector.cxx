@@ -51,8 +51,8 @@ bool MIDTrackletSelector::Setup(const Char_t *nameInputFile = "muonTrackletAccep
   mTrackletAcc2D = (TH2C*) mTrackletAcc4D[kAllMuons]->Projection(1,0);
 
   mEtaMax = mTrackletAcc4D[kAllMuons]->GetAxis(2)->GetXmax();
-  mMomMax = mTrackletAcc4D[kAllMuons]->GetAxis(3)->GetXmax();
-  mMomMin = mTrackletAcc4D[kAllMuons]->GetAxis(3)->GetXmin();
+  mMomMax = mTrackletAcc4D[kAllMuons]->GetAxis(3)->GetBinCenter(mTrackletAcc4D[kAllMuons]->GetAxis(3)->GetNbins());
+  mMomMin = mTrackletAcc4D[kAllMuons]->GetAxis(3)->GetBinCenter(1);
 
   mIsSelectorSetup = kTRUE;
   
