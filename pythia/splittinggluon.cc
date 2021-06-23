@@ -147,7 +147,6 @@ int main(int argc, char* argv[]) {
     printf("pythia.info.sigmaGen() %f\n", pythia.info.sigmaGen());
     hdeltaR->Write();
     hdeltaPhi->Write();
-    htsplitting->Write();
     hdeltaRvsGluonPt->Write();
     fout->Write();
     return 0;
