@@ -1,5 +1,5 @@
 outputfile: ddbar_splitting.root
-maxneventsperjob: 1000 #max events per file/process
+maxneventsperjob: 10000 #max events per file/process
 tune: 14 #monash
 beamidA: 2212 #incoming hadron
 beamidB: 2212 #incoming hadron
