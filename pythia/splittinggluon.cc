@@ -52,13 +52,14 @@ int main(int argc, char* argv[]) {
 
     YAML::Node node = YAML::LoadFile("config_splitting.yaml");
 
+    int hqpdg = node["hqpdg"].as<int>();
     int maxnevents = node["maxneventsperjob"].as<int>();
     int tune = node["tune"].as<int>();
     int beamidA = node["beamidA"].as<int>();
     int beamidB = node["beamidB"].as<int>();
     float eCM = node["eCM"].as<float>();
-    float ptmingluon = node["ptmingluon"].as<float>();
     float pTHatMin = node["pTHatMin"].as<float>();
+    float maxrapidityhq = node["maxrapidityhq"].as<float>();
     const std::string pythiamode = node["pythiamode"].as<std::string>();
     const std::string outputfile = node["outputfile"].as<std::string>();
     const std::string extramode = node["extramode"].as<std::string>();
@@ -103,33 +104,34 @@ int main(int argc, char* argv[]) {
 
     fout->cd();
     TH1F*hdeltaR = new TH1F("hdeltaR", ";#Delta R (c#bar{c});Entries", 1000., 0, 3.);
-    TH2F*hdeltaRvsGluonPt = new TH2F("hdeltaRvsGluonPt", ";p_{T}(g);#Delta R (c#bar{c})", 50, 0., 50., 30., 0, 3.);
+    TH2F*hdeltaRvsGluonPt = new TH2F("hdeltaRvsGluonPt", ";p_{T}(g);#Delta R (c#bar{c})", 50, 0., 50., 100., 0, 2.);
+    TH2F*hPt1Pt2 = new TH2F("hPt1Pt2", ";p_{T}(c);p_{T}(cbar)", 50, 0., 50., 50., 0, 50.);
+    TH2F*hdeltaPtvsGluonPt = new TH2F("hdeltaPtvsGluonPt", ";p_{T}(g);#Delta p_{T} (c#bar{c})", 50, 0., 50., 100., 0, 2.);
     TH1F*hdeltaPhi = new TH1F("hdeltaPhi", ";#Delta #phi (c#bar{c});Entries", 1000., -5., 5.);
+    TH2F*hQqbarmassvsGluonPt = new TH2F("hQqbarmassvsGluonPt", ";p_{T}(g);mass(c#bar{c})", 50, 0., 50., 100., 0, 20.);
+    TH1F*hQqbarmass = new TH1F("hQqbarmass", ";mass (c#bar{c});Entries", 100., 0, 20.);
+    TH2F*hQqbarformtimevsGluonEg = new TH2F("hQqbarformtimevsGluonEg", ";gluon energy; formation time(fm/c)", 200, 0., 200., 100., 0, 20.);
 
     // Begin event loop. Generate event. Skip if error. List first one.
     for (int iEvent = 0; iEvent < maxnevents; ++iEvent) {
         pythia.next();
         for (int i = 0; i < pythia.event.size(); ++i) {
             if(pythia.event[i].pT()<0 || pythia.event[i].pT()>1.e+5) continue;
-            if(pythia.event[i].id()==4) {
+            if(pythia.event[i].id()==hqpdg) {
 		int mothercharmindex = pythia.event[i].mother1();
                 int pdgmother = pythia.event[mothercharmindex].id();
-		if (pythia.event[mothercharmindex].pT() < ptmingluon) continue;
    	        if (pdgmother!=21) continue;
 		int daughter1 = pythia.event.daughterList(mothercharmindex)[0];
                 int daughter2 = pythia.event.daughterList(mothercharmindex)[1];
 	        int pdgdaughter1 = pythia.event[daughter1].id();		
 	        int pdgdaughter2 = pythia.event[daughter2].id();
-	        if (!((pdgdaughter1 == -4 && pdgdaughter2 == 4) || (pdgdaughter1 == 4 && pdgdaughter2 == -4))) continue;           
-
-		if (std::abs(pythia.event[daughter1].y()<1.)) continue;
-                if (std::abs(pythia.event[daughter2].y()<1.)) continue;
-
+	        if (!((pdgdaughter1 == -hqpdg && pdgdaughter2 == hqpdg) || (pdgdaughter1 == hqpdg && pdgdaughter2 == -hqpdg))) continue; 
+		if (std::abs(pythia.event[daughter1].y()<maxrapidityhq)) continue;
+                if (std::abs(pythia.event[daughter2].y()<maxrapidityhq)) continue;
 		int ndaughters = daughter2 - daughter1 + 1;
 		if (ndaughters!=2) continue;
-		//std::cout<<"daughter1 index="<<daughter1<<std::endl;
-		//std::cout<<"daughter2 index="<<daughter2<<std::endl;
-		//std::cout<<"ndaughters="<<ndaughters<<std::endl;
+		double pt1 = pythia.event[daughter1].pT();
+		double pt2 = pythia.event[daughter2].pT();
 		double eta1 = pythia.event[daughter1].eta();
 		double eta2 = pythia.event[daughter2].eta();
 		double phi1 = pythia.event[daughter1].phi();
@@ -138,6 +140,13 @@ int main(int argc, char* argv[]) {
 		hdeltaR->Fill(r);
 		hdeltaPhi->Fill(phi2-phi1);
 		hdeltaRvsGluonPt->Fill(pythia.event[mothercharmindex].pT(), r);
+		hdeltaPtvsGluonPt->Fill(pythia.event[mothercharmindex].pT(), pt1-pt2);
+		hPt1Pt2->Fill(pt1, pt2);
+		double massccbar = (pythia.event[daughter1].p() + pythia.event[daughter2].p()).mCalc();
+                hQqbarmassvsGluonPt->Fill(pythia.event[mothercharmindex].pT(), massccbar);
+		hQqbarmass->Fill(massccbar);
+		hQqbarformtimevsGluonEg->Fill(pythia.event[mothercharmindex].eCalc(), 0.2 * 2*pythia.event[mothercharmindex].eCalc()/(massccbar*massccbar));
+
 	    }
             // End of event loop. Statistics. Histogram. Done.
         }
@@ -148,6 +157,13 @@ int main(int argc, char* argv[]) {
     hdeltaR->Write();
     hdeltaPhi->Write();
     hdeltaRvsGluonPt->Write();
+    hdeltaPtvsGluonPt->Write();
+    hPt1Pt2->Write();
+    hQqbarmassvsGluonPt->Write();
+    hQqbarmass->Write();
+    TProfile * pQqbarformtimevsGluonEg = (TProfile*)hQqbarformtimevsGluonEg->ProfileX("pQqbarformtimevsGluonEg");
+    hQqbarformtimevsGluonEg->Write();
+    pQqbarformtimevsGluonEg->Write();
     fout->Write();
     return 0;
 }
