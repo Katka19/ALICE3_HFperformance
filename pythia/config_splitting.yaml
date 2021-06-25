@@ -1,11 +1,12 @@
 outputfile: ddbar_splitting.root
-maxneventsperjob: 10000 #max events per file/process
+maxneventsperjob: 1000 #max events per file/process
 tune: 14 #monash
 beamidA: 2212 #incoming hadron
 beamidB: 2212 #incoming hadron
 eCM: 14000.
+#pythiamode: HardQCD:hardccbar = on
 pythiamode: HardQCD:all = on
 extramode: none #in case extra tuning is needed
-pTHatMin: 0.
+pTHatMin: 300.
 hqpdg: 4
-maxrapidityhq: 1.
+minEgluon: 20.

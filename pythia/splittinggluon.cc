@@ -64,7 +64,7 @@ int main(int argc, char* argv[]) {
     int beamidB = node["beamidB"].as<int>();
     float eCM = node["eCM"].as<float>();
     float pTHatMin = node["pTHatMin"].as<float>();
-    float maxrapidityhq = node["maxrapidityhq"].as<float>();
+    float minEgluon = node["minEgluon"].as<float>();
     const std::string pythiamode = node["pythiamode"].as<std::string>();
     const std::string outputfile = node["outputfile"].as<std::string>();
     const std::string extramode = node["extramode"].as<std::string>();
@@ -110,18 +110,19 @@ int main(int argc, char* argv[]) {
     fout->cd();
 
     // deltaR between the c-cbar pair defined in terms of eta and phi
+    TH1F*hptdiff = new TH1F("hptdiff", ";#Delta pt (c#bar{c});Entries", 1000., 0, 3.);
     TH1F*hdeltaR = new TH1F("hdeltaR", ";#Delta R (c#bar{c});Entries", 1000., 0, 3.);
     TH1F*hetaG = new TH1F("hetaG", ";#eta(g);Entries", 1000., -5, 5.);
     // deltaR between the c-cbar pair defined in terms of eta and phi as a function of the gluon energy
-    TH2F*hdeltaRvsGluonE = new TH2F("hdeltaRvsGluonE", ";E(g);#Delta R (c#bar{c})", 50, 0., 50., 100., 0, 2.);
+    TH2F*hdeltaRvsGluonE = new TH2F("hdeltaRvsGluonE", ";E(g);#Delta R (c#bar{c})", 1000, 0., 100., 100., 0, 3.);
     // scatter plot pt charm vs pt anticharm
-    TH2F*hPt1Pt2 = new TH2F("hPt1Pt2", ";p_{T}(c);p_{T}(cbar)", 50, 0., 50., 50., 0, 50.);
-    TH2F*hPtcharmvsGluonE = new TH2F("hPtcharmvsGluonE", ";E(g);p_{T}(c)", 50, 0., 50., 100., 0, 50.);
+    TH2F*hPt1Pt2 = new TH2F("hPt1Pt2", ";p_{T}(c);p_{T}(cbar)", 200, 0., 200., 200., 0, 200.);
+    TH2F*hPtcharmvsGluonE = new TH2F("hPtcharmvsGluonE", ";E(g);p_{T}(c)", 200, 0., 200., 200., 0, 200.);
     TH1F*hdeltaPhi = new TH1F("hdeltaPhi", ";#Delta #phi (c#bar{c});Entries", 1000., -5., 5.);
-    TH2F*hQqbarmassvsGluonE = new TH2F("hQqbarmassvsGluonE", ";E(g);mass(c#bar{c})", 50, 0., 50., 100., 0, 20.);
+    TH2F*hQqbarmassvsGluonE = new TH2F("hQqbarmassvsGluonE", ";E(g);mass(c#bar{c})", 200, 0., 200., 200., 0, 200.);
     TH1F*hQqbarmass = new TH1F("hQqbarmass", ";mass (c#bar{c});Entries", 100., 0, 20.);
-    TH2F*hQqbarformtimevsGluonE = new TH2F("hQqbarformtimevsGluonE", ";gluon energy; formation time(fm/c)", 200, 0., 200., 100., 0, 20.);
-    TH2F*hqtvsformtime = new TH2F("hqtvsformtime", ";formation time (fm/c); q_{perp} (GeV)", 10, 0., 10., 100., 0, 20.);
+    TH2F*hQqbarformtimevsGluonE = new TH2F("hQqbarformtimevsGluonE", ";gluon energy; formation time(fm/c)", 200, 0., 200., 200., 0, 200.);
+    TH2F*hqtvsformtime = new TH2F("hqtvsformtime", ";formation time (fm/c); q_{perp} (GeV)", 100, 0., 10., 100., 0, 20.);
     TH2F*hptcharmvsformtime = new TH2F("hptcharmvsformtime", ";formation time (fm/c); p_{T} charm (GeV)", 10, 0., 10., 100., 0, 20.);
 
     // Begin event loop. Generate event. Skip if error. List first one.
@@ -144,6 +145,7 @@ int main(int argc, char* argv[]) {
 	        if (!((pdgdaughter1 == -hqpdg && pdgdaughter2 == hqpdg) || (pdgdaughter1 == hqpdg && pdgdaughter2 == -hqpdg))) continue; 
 		int ndaughters = daughter2 - daughter1 + 1;
 		if (ndaughters!=2) continue;
+		if (pythia.event[mothercharmindex].e()<minEgluon || std::abs(pythia.event[mothercharmindex].eta())>1.) continue;
 		double pt1 = pythia.event[daughter1].pT();
 		double pt2 = pythia.event[daughter2].pT();
 		double eta1 = pythia.event[daughter1].eta();
@@ -151,6 +153,7 @@ int main(int argc, char* argv[]) {
 		double phi1 = pythia.event[daughter1].phi();
 		double phi2 = pythia.event[daughter2].phi();
                 double r = sqrt((eta2-eta1)*(eta2-eta1) + (phi2-phi1)*(phi2-phi1));
+		hptdiff->Fill(pythia.event[daughter1].px() + pythia.event[daughter2].px() - pythia.event[mothercharmindex].px());
 		hetaG->Fill(pythia.event[mothercharmindex].eta());
 		hdeltaR->Fill(r);
 		hdeltaPhi->Fill(phi2-phi1);
@@ -206,6 +209,7 @@ int main(int argc, char* argv[]) {
     hptcharmvsformtime->Write();
     TProfile * pptcharmvsformtime = (TProfile*)hptcharmvsformtime->ProfileX("pptcharmvsformtime");
     pptcharmvsformtime->Write();
+    hptdiff->Write();
     fout->Write();
     return 0;
 }
