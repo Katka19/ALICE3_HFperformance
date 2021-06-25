@@ -80,7 +80,7 @@ int main(int argc, char *argv[]) {
   pythia.readString(Form("Beams:idB = %d", beamidB));
   pythia.readString(Form("Beams:eCM = %f", eCM));
   pythia.readString(Form("PhaseSpace:pTHatMin = %f", pTHatMin));
-  //pythia.readString("PartonLevel:FSR = off");
+  // pythia.readString("PartonLevel:FSR = off");
   pythia.readString("PartonLevel:ISR = off");
 
   pythia.readString("Random:setSeed = on");
@@ -186,34 +186,38 @@ int main(int argc, char *argv[]) {
                pdggluonDaugthSecIndex == -hqpdg)))
           continue;
         int ndaughters = gluonDaugthSecIndex - gluonDaugthFirstIndex + 1;
-        if ((mothercharmSecIndex - mothercharmFirstIndex) != 0 && mothercharmSecIndex!=0) {
+        if ((mothercharmSecIndex - mothercharmFirstIndex) != 0 &&
+            mothercharmSecIndex != 0) {
           std::cout << "ATTENTION: the charm quark has "
-	  	    << mothercharmSecIndex - mothercharmFirstIndex + 1
-                  << "mothers, it is not a splitting!" << std::endl;
-	  //pythia.event.list();
-	  //std::cout<<"charm index"<<gluonDaugthFirstIndex<<std::endl;
-	  //std::cout<<"charm index"<<gluonDaugthSecIndex<<std::endl;
-	  //return 0;
-	  //for (int ind=mothercharmSecIndex; ind<=mothercharmFirstIndex; ind++){
-	  //  std::cout<<pythia.event[ind].id()<<std::endl; 
-	  //}
-	  continue;
-	}
+                    << mothercharmSecIndex - mothercharmFirstIndex + 1
+                    << "mothers, it is not a splitting!" << std::endl;
+          // pythia.event.list();
+          // std::cout<<"charm index"<<gluonDaugthFirstIndex<<std::endl;
+          // std::cout<<"charm index"<<gluonDaugthSecIndex<<std::endl;
+          // return 0;
+          // for (int ind=mothercharmSecIndex; ind<=mothercharmFirstIndex;
+          // ind++){
+          //  std::cout<<pythia.event[ind].id()<<std::endl;
+          //}
+          continue;
+        }
         if (ndaughters != 2) {
           std::cout << "ATTENTION: the gluon has more than two daugthers"
                     << ndaughters << std::endl;
           continue;
         }
         // FIXME selection on gluon eta now hardcoded
-        bool matchingparton = (i == gluonDaugthFirstIndex) || (i==gluonDaugthSecIndex);
-        if (!matchingparton) continue; 
+        bool matchingparton =
+            (i == gluonDaugthFirstIndex) || (i == gluonDaugthSecIndex);
+        if (!matchingparton)
+          continue;
         if (pythia.event[mothercharmFirstIndex].e() < minEgluon ||
             std::abs(pythia.event[mothercharmFirstIndex].eta()) > 1.)
           continue;
-	//pythia.event.list();
-	//std::cout<<"charm index"<<gluonDaugthFirstIndex<<std::endl;
-	//std::cout<<"charm index"<<gluonDaugthSecIndex<<std::endl;
-	//return 0;
+        // pythia.event.list();
+        // std::cout<<"charm index"<<gluonDaugthFirstIndex<<std::endl;
+        // std::cout<<"charm index"<<gluonDaugthSecIndex<<std::endl;
+        // return 0;
         double pt1 = pythia.event[gluonDaugthFirstIndex].pT();
         double pt2 = pythia.event[gluonDaugthSecIndex].pT();
         double eta1 = pythia.event[gluonDaugthFirstIndex].eta();
