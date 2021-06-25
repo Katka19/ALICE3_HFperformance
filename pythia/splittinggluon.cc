@@ -188,9 +188,9 @@ int main(int argc, char *argv[]) {
         int ndaughters = gluonDaugthSecIndex - gluonDaugthFirstIndex + 1;
         if ((mothercharmSecIndex - mothercharmFirstIndex) != 0 &&
             mothercharmSecIndex != 0) {
-          std::cout << "ATTENTION: the charm quark has "
-                    << mothercharmSecIndex - mothercharmFirstIndex + 1
-                    << "mothers, it is not a splitting!" << std::endl;
+          //std::cout << "ATTENTION: the charm quark has "
+          //          << mothercharmSecIndex - mothercharmFirstIndex + 1
+          //          << "mothers, it is not a splitting!" << std::endl;
           // pythia.event.list();
           // std::cout<<"charm index"<<gluonDaugthFirstIndex<<std::endl;
           // std::cout<<"charm index"<<gluonDaugthSecIndex<<std::endl;
@@ -243,7 +243,10 @@ int main(int argc, char *argv[]) {
         hInvmassvsGluonE->Fill(pythia.event[mothercharmFirstIndex].e(),
                                massccbar);
         hInvmass->Fill(massccbar);
-        // hcut*c=197.3MeV fm
+	if (pythia.event[gluonDaugthFirstIndex].status()!=-51 || pythia.event[gluonDaugthFirstIndex].status()!=-51) {
+	   std::cout<<"ERROR: Status selected topologies"<<pythia.event[gluonDaugthFirstIndex].status()<<std::endl;
+	}
+	// hcut*c=197.3MeV fm
         // In NU, 1 = 0.2 GeV * fm
         // 5 GeV-1 = fm
         // GeV-1 = 0.2 fm
