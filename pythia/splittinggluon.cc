@@ -1,4 +1,8 @@
-// This is a simple macro to generate pythia predictions
+// This is a simple macro to generate pythia predictions for the study 
+// of gluon splitting processes. The basic idea is to find g->ccbar 
+// topologies, identify the kinematic of the gluon and of the c/cbar
+// and estimate the formation time of the gluon. In the future, a 
+// simple parametrization of the broadening process will be added.
 
 #include <algorithm>
 #include <iostream>
@@ -21,6 +25,7 @@
 #include "TFile.h"
 #include "TList.h"
 #include "TVector3.h"
+#include "TLorentzVector.h"
 #include "TMath.h"
 #include "TNtuple.h"
 #include "TString.h"
@@ -103,19 +108,30 @@ int main(int argc, char* argv[]) {
     TFile *fout = new TFile(outputfile.data(), "recreate");
 
     fout->cd();
+
+    // deltaR between the c-cbar pair defined in terms of eta and phi
     TH1F*hdeltaR = new TH1F("hdeltaR", ";#Delta R (c#bar{c});Entries", 1000., 0, 3.);
-    TH2F*hdeltaRvsGluonPt = new TH2F("hdeltaRvsGluonPt", ";p_{T}(g);#Delta R (c#bar{c})", 50, 0., 50., 100., 0, 2.);
+    TH1F*hetaG = new TH1F("hetaG", ";#eta(g);Entries", 1000., -5, 5.);
+    // deltaR between the c-cbar pair defined in terms of eta and phi as a function of the gluon energy
+    TH2F*hdeltaRvsGluonE = new TH2F("hdeltaRvsGluonE", ";E(g);#Delta R (c#bar{c})", 50, 0., 50., 100., 0, 2.);
+    // scatter plot pt charm vs pt anticharm
     TH2F*hPt1Pt2 = new TH2F("hPt1Pt2", ";p_{T}(c);p_{T}(cbar)", 50, 0., 50., 50., 0, 50.);
-    TH2F*hdeltaPtvsGluonPt = new TH2F("hdeltaPtvsGluonPt", ";p_{T}(g);#Delta p_{T} (c#bar{c})", 50, 0., 50., 100., 0, 2.);
+    TH2F*hPtcharmvsGluonE = new TH2F("hPtcharmvsGluonE", ";E(g);p_{T}(c)", 50, 0., 50., 100., 0, 50.);
     TH1F*hdeltaPhi = new TH1F("hdeltaPhi", ";#Delta #phi (c#bar{c});Entries", 1000., -5., 5.);
-    TH2F*hQqbarmassvsGluonPt = new TH2F("hQqbarmassvsGluonPt", ";p_{T}(g);mass(c#bar{c})", 50, 0., 50., 100., 0, 20.);
+    TH2F*hQqbarmassvsGluonE = new TH2F("hQqbarmassvsGluonE", ";E(g);mass(c#bar{c})", 50, 0., 50., 100., 0, 20.);
     TH1F*hQqbarmass = new TH1F("hQqbarmass", ";mass (c#bar{c});Entries", 100., 0, 20.);
-    TH2F*hQqbarformtimevsGluonEg = new TH2F("hQqbarformtimevsGluonEg", ";gluon energy; formation time(fm/c)", 200, 0., 200., 100., 0, 20.);
+    TH2F*hQqbarformtimevsGluonE = new TH2F("hQqbarformtimevsGluonE", ";gluon energy; formation time(fm/c)", 200, 0., 200., 100., 0, 20.);
+    TH2F*hqtvsformtime = new TH2F("hqtvsformtime", ";formation time (fm/c); q_{perp} (GeV)", 10, 0., 10., 100., 0, 20.);
+    TH2F*hptcharmvsformtime = new TH2F("hptcharmvsformtime", ";formation time (fm/c); p_{T} charm (GeV)", 10, 0., 10., 100., 0, 20.);
 
     // Begin event loop. Generate event. Skip if error. List first one.
     for (int iEvent = 0; iEvent < maxnevents; ++iEvent) {
         pythia.next();
         for (int i = 0; i < pythia.event.size(); ++i) {
+            double eCalc = pythia.event[i].eCalc();
+            if (abs(eCalc/pythia.event[i].e() - 1.) > 1e-3) cout << " e mismatch, i = "
+            << i << " e_nominal = " << pythia.event[i].e() << " e-from-p = "
+            << eCalc << " m-from-e " << pythia.event[i].mCalc() << "\n";
             if(pythia.event[i].pT()<0 || pythia.event[i].pT()>1.e+5) continue;
             if(pythia.event[i].id()==hqpdg) {
 		int mothercharmindex = pythia.event[i].mother1();
@@ -126,8 +142,6 @@ int main(int argc, char* argv[]) {
 	        int pdgdaughter1 = pythia.event[daughter1].id();		
 	        int pdgdaughter2 = pythia.event[daughter2].id();
 	        if (!((pdgdaughter1 == -hqpdg && pdgdaughter2 == hqpdg) || (pdgdaughter1 == hqpdg && pdgdaughter2 == -hqpdg))) continue; 
-		if (std::abs(pythia.event[daughter1].y()<maxrapidityhq)) continue;
-                if (std::abs(pythia.event[daughter2].y()<maxrapidityhq)) continue;
 		int ndaughters = daughter2 - daughter1 + 1;
 		if (ndaughters!=2) continue;
 		double pt1 = pythia.event[daughter1].pT();
@@ -137,16 +151,31 @@ int main(int argc, char* argv[]) {
 		double phi1 = pythia.event[daughter1].phi();
 		double phi2 = pythia.event[daughter2].phi();
                 double r = sqrt((eta2-eta1)*(eta2-eta1) + (phi2-phi1)*(phi2-phi1));
+		hetaG->Fill(pythia.event[mothercharmindex].eta());
 		hdeltaR->Fill(r);
 		hdeltaPhi->Fill(phi2-phi1);
-		hdeltaRvsGluonPt->Fill(pythia.event[mothercharmindex].pT(), r);
-		hdeltaPtvsGluonPt->Fill(pythia.event[mothercharmindex].pT(), pt1-pt2);
+		hdeltaRvsGluonE->Fill(pythia.event[mothercharmindex].e(), r);
+		hPtcharmvsGluonE->Fill(pythia.event[mothercharmindex].e(), pt1);
 		hPt1Pt2->Fill(pt1, pt2);
 		double massccbar = (pythia.event[daughter1].p() + pythia.event[daughter2].p()).mCalc();
-                hQqbarmassvsGluonPt->Fill(pythia.event[mothercharmindex].pT(), massccbar);
+                hQqbarmassvsGluonE->Fill(pythia.event[mothercharmindex].e(), massccbar);
 		hQqbarmass->Fill(massccbar);
-		hQqbarformtimevsGluonEg->Fill(pythia.event[mothercharmindex].eCalc(), 0.2 * 2*pythia.event[mothercharmindex].eCalc()/(massccbar*massccbar));
-
+                // hcut*c=197.3MeV fm
+		// In NU, 1 = 0.2 GeV * fm
+		// 5 GeV-1 = fm 
+		// GeV-1 = 0.2 fm
+		// X GeV-1 = 0.2 X fm
+		double formtime = 0.2 * pythia.event[daughter1].eCalc()/(2*pythia.event[daughter1].m2Calc());
+                hQqbarformtimevsGluonE->Fill(pythia.event[mothercharmindex].eCalc(), formtime);
+		TLorentzVector vg(pythia.event[mothercharmindex].eCalc(), pythia.event[mothercharmindex].px(), pythia.event[mothercharmindex].py(), pythia.event[mothercharmindex].pz());
+		TLorentzVector v1(pythia.event[daughter1].e(), pythia.event[daughter1].px(), pythia.event[daughter1].py(), pythia.event[daughter1].pz());
+		TLorentzVector v2(pythia.event[daughter2].e(), pythia.event[daughter2].px(), pythia.event[daughter2].py(), pythia.event[daughter2].pz());
+		TVector3 pg = vg.Vect();
+		TVector3 p1 = v1.Vect();
+		TVector3 p2 = v2.Vect();
+		Double_t ppv1_2 = p1.Perp(pg);
+		hqtvsformtime->Fill(formtime, ppv1_2);
+		hptcharmvsformtime->Fill(formtime, pt1);
 	    }
             // End of event loop. Statistics. Histogram. Done.
         }
@@ -154,16 +183,29 @@ int main(int argc, char* argv[]) {
     pythia.stat();
     printf("nAccepted %ld, nTried %ld\n", pythia.info.nAccepted(), pythia.info.nTried());
     printf("pythia.info.sigmaGen() %f\n", pythia.info.sigmaGen());
+    hetaG->Write();
     hdeltaR->Write();
     hdeltaPhi->Write();
-    hdeltaRvsGluonPt->Write();
-    hdeltaPtvsGluonPt->Write();
+    hdeltaRvsGluonE->Write();
+    hPtcharmvsGluonE->Write();
+    TProfile * pPtcharmvsGluonE = (TProfile*)hPtcharmvsGluonE->ProfileX("pPtcharmvsGluonE");
+    pPtcharmvsGluonE->Write();
     hPt1Pt2->Write();
-    hQqbarmassvsGluonPt->Write();
+    hQqbarmassvsGluonE->Write();
     hQqbarmass->Write();
-    TProfile * pQqbarformtimevsGluonEg = (TProfile*)hQqbarformtimevsGluonEg->ProfileX("pQqbarformtimevsGluonEg");
-    hQqbarformtimevsGluonEg->Write();
+    TProfile * pQqbarformtimevsGluonEg = (TProfile*)hQqbarformtimevsGluonE->ProfileX("pQqbarformtimevsGluonE");
+    hQqbarformtimevsGluonE->Write();
+    pQqbarformtimevsGluonEg->GetYaxis()->SetTitle("Formation time (fm/c)"); 
+    pQqbarformtimevsGluonEg->GetXaxis()->SetTitle("E_{g} (GeV)"); 
     pQqbarformtimevsGluonEg->Write();
+    hqtvsformtime->Write();
+    TProfile * pqtvsformtime = (TProfile*)hqtvsformtime->ProfileX("pqtvsformtime");
+    pqtvsformtime->GetYaxis()->SetTitle("c-gluon <q_{T}>"); 
+    pqtvsformtime->GetXaxis()->SetTitle("Formation time (fm/c)"); 
+    pqtvsformtime->Write();
+    hptcharmvsformtime->Write();
+    TProfile * pptcharmvsformtime = (TProfile*)hptcharmvsformtime->ProfileX("pptcharmvsformtime");
+    pptcharmvsformtime->Write();
     fout->Write();
     return 0;
 }
