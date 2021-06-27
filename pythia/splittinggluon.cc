@@ -64,6 +64,7 @@ int main(int argc, char *argv[]) {
   float eCM = node["eCM"].as<float>();
   float pTHatMin = node["pTHatMin"].as<float>();
   float minEgluon = node["minEgluon"].as<float>();
+  float maxEgluon = node["maxEgluon"].as<float>();
   float maxabsEtaGluon = node["maxabsEtaGluon"].as<float>();
   const std::string pythiamode = node["pythiamode"].as<std::string>();
   const std::string outputfile = node["outputfile"].as<std::string>();
@@ -115,50 +116,30 @@ int main(int argc, char *argv[]) {
   TFile *fout = new TFile(outputfile.data(), "recreate");
 
   fout->cd();
-
-  // difference between gluon px and sum of charm px, normalized by gluon px
-  TH1F *hPxConservat =
-      new TH1F("hPxConservat", ";conservation gluon px in splitting;Entries",
-               1000., 0, 3.);
-  // deltaR between the c-cbar pair defined in terms of eta and phi
-  TH1F *hdeltaR =
-      new TH1F("hdeltaR", ";#Delta R (c#bar{c});Entries", 1000., 0, 3.);
-  // distribution of gluon eta
-  TH1F *hetaG = new TH1F("hetaG", ";#eta(g);Entries", 1000., -5, 5.);
-  // deltaR between the c-cbar pair defined in terms of eta and phi as a
-  // function of the gluon energy
-  TH2F *hdeltaRvsGluonE =
-      new TH2F("hdeltaRvsGluonE", ";E(g);#Delta R (c#bar{c})", 1000, 0., 100.,
-               100., 0, 3.);
-  // scatter plot pt charm vs pt anticharm
-  TH2F *hPt1Pt2 = new TH2F("hPt1Pt2", ";p_{T}(c);p_{T}(cbar)", 200, 0., 200.,
-                           200., 0, 200.);
-  // scatter plot pt charm vs Egluon
-  TH2F *hPtcharmvsGluonE = new TH2F("hPtcharmvsGluonE", ";E(g);p_{T}(c)", 200,
-                                    0., 200., 200., 0, 200.);
-  // scatter plot inv mass ccbar vs gluon energy
-  TH2F *hInvmassvsGluonE = new TH2F("hInvmassvsGluonE", ";E(g);mass(c#bar{c})",
+  //scatter plot kinematics
+  TH2F *hPt1Pt2 = new TH2F("hPt1Pt2", ";p^{c2}_{T} (GeV/c);p^{c1}_{T} (GeV/c)",
+		           200, 0., 200., 200., 0, 200.);
+  TH2F *hPt1vsPtg = new TH2F("hPt1vsPtg", ";p^{g}_{T} (GeV/c);p^{c1}_{T} (GeV/c)",
+		             200, 0., 200., 200., 0, 400.);
+  TH1F *hPxConservat = new TH1F("hPxConservat", ";conservation gluon px;Entries",
+                                1000., 0, 3.);
+  //plots vs gluon E
+  TH2F *hdeltaRvsGluonE = new TH2F("hdeltaRvsGluonE", ";E_{g} (GeV);#Delta R (c#bar{c})",
+	                           1000, 0., 100., 100., 0, 3.);
+  TH2F *hInvmassvsGluonE = new TH2F("hInvmassvsGluonE", ";E_{g} (GeV);mass(c#bar{c}) (GeV/c^{2})",
                                     200, 0., 200., 200., 0, 200.);
-  // Inv. mass ccbar
-  TH1F *hInvmass =
-      new TH1F("hInvmass", ";mass (c#bar{c});Entries", 100., 0, 20.);
-  // Gluon formation time vs Gluon energy
-  TH2F *hGformtimevsGluonE =
-      new TH2F("hGformtimevsGluonE", ";gluon energy; formation time(fm/c)", 50,
-               0., 500., 200., 0, 20.);
-  // perperdicular component of the 3 momentum c vs cbar vs gluon formation time
-  // Gluon formation time vs Gluon energy
-  TH2F *hGformtimevsDeltaR =
-      new TH2F("hGformtimevsDeltaR", ";#Delta R; formation time(fm/c)", 300,
-               0., 3., 200., 0, 20.);
-  // perperdicular component of the 3 momentum c vs cbar vs gluon formation time
-  TH2F *hPperpGformtime =
-      new TH2F("hPperpGformtime", ";formation time (fm/c); q_{perp} (GeV)", 100,
-               0., 10., 500., 0, 100.);
-  // pT of the charm vs gluon formation time
-  TH2F *hPtcharmvsGformtime = new TH2F(
-      "hPtcharmvsGformtime", ";formation time (fm/c); p_{T} charm (GeV)", 100,
-      0., 10., 500., 0, 100.);
+  TH2F *hGformtimevsGluonE = new TH2F("hGformtimevsGluonE", ";E_{g} (GeV); formation time(fm/c)",
+		                      200, 0., 200., 200., 0, 20.);
+  //study vs formation time
+  TH2F *hGformtimevsDeltaR = new TH2F("hGformtimevsDeltaR", ";#Delta R; formation time(fm/c)",
+		                      300, 0., 3., 200., 0, 20.);
+  TH2F *hPtcharmvsGformtime = new TH2F("hPtcharmvsGformtime", ";formation time (fm/c); p^{c1}_{T} (GeV)",
+		                       100, 0., 10., 500., 0, 100.);
+  //single var distribution
+  TH1F *hInvmass = new TH1F("hInvmass", ";mass (c#bar{c}) (GeV/c^{2};Entries",
+		            100., 0, 20.);
+  TH1F *hdeltaR = new TH1F("hdeltaR", ";#Delta R (c#bar{c});Entries", 1000., 0, 3.);
+  TH1F *hetaG = new TH1F("hetaG", ";#eta(g);Entries", 1000., -5, 5.);
 
   // Begin event loop. Generate event. Skip if error. List first one.
   for (int iEvent = 0; iEvent < maxnevents; ++iEvent) {
@@ -206,77 +187,70 @@ int main(int argc, char *argv[]) {
             (i == gluonDaugthFirstIndex) || (i == gluonDaugthSecIndex);
         if (!matchingparton)
           continue;
-        if (pythia.event[mothercharmFirstIndex].e() < minEgluon ||
+        TLorentzVector vg, v1, v2;
+        vg.SetPxPyPzE(pythia.event[mothercharmFirstIndex].px(),
+		      pythia.event[mothercharmFirstIndex].py(),
+		      pythia.event[mothercharmFirstIndex].pz(),
+		      pythia.event[mothercharmFirstIndex].e());
+        v1.SetPxPyPzE(pythia.event[gluonDaugthFirstIndex].px(),
+		      pythia.event[gluonDaugthFirstIndex].py(),
+		      pythia.event[gluonDaugthFirstIndex].pz(),
+		      pythia.event[gluonDaugthFirstIndex].e());
+        v2.SetPxPyPzE(pythia.event[gluonDaugthSecIndex].px(),
+		      pythia.event[gluonDaugthSecIndex].py(),
+		      pythia.event[gluonDaugthSecIndex].pz(),
+		      pythia.event[gluonDaugthSecIndex].e());
+        TLorentzVector vgfromcharms = v1 + v2;
+	TVector3 vg3 = vg.Vect();
+        TVector3 v1g = v1.Vect();
+        TVector3 v2g = v2.Vect();
+	TVector3 vgfromcharms3 = vgfromcharms.Vect();
+        
+        if (vgfromcharms.E() < minEgluon ||
+            vgfromcharms.E() > maxEgluon ||
             std::abs(pythia.event[mothercharmFirstIndex].eta()) > maxabsEtaGluon)
           continue;
         // pythia.event.list();
         // std::cout<<"charm index"<<gluonDaugthFirstIndex<<std::endl;
         // std::cout<<"charm index"<<gluonDaugthSecIndex<<std::endl;
         // return 0;
-        double pt1 = pythia.event[gluonDaugthFirstIndex].pT();
-        double pt2 = pythia.event[gluonDaugthSecIndex].pT();
-        double eta1 = pythia.event[gluonDaugthFirstIndex].eta();
-        double eta2 = pythia.event[gluonDaugthSecIndex].eta();
-        double phi1 = pythia.event[gluonDaugthFirstIndex].phi();
-        double phi2 = pythia.event[gluonDaugthSecIndex].phi();
-        double r =
-            sqrt((eta2 - eta1) * (eta2 - eta1) + (phi2 - phi1) * (phi2 - phi1));
-        double massccbar = (pythia.event[gluonDaugthFirstIndex].p() +
-                            pythia.event[gluonDaugthSecIndex].p())
-                               .mCalc();
-        double pxconserv = pythia.event[gluonDaugthFirstIndex].px() +
-                           pythia.event[gluonDaugthSecIndex].px() -
-                           pythia.event[mothercharmFirstIndex].px();
-
-        hPxConservat->Fill(pxconserv /
-                           pythia.event[mothercharmFirstIndex].px());
-        hetaG->Fill(pythia.event[mothercharmFirstIndex].eta());
-        hdeltaR->Fill(r);
-        hdeltaRvsGluonE->Fill(pythia.event[mothercharmFirstIndex].e(), r);
-        hPtcharmvsGluonE->Fill(pythia.event[mothercharmFirstIndex].e(), pt1);
-        hPt1Pt2->Fill(pt1, pt2);
-        hInvmassvsGluonE->Fill(pythia.event[mothercharmFirstIndex].e(),
-                               massccbar);
-        hInvmass->Fill(massccbar);
         if (pythia.event[gluonDaugthFirstIndex].status() != -51 ||
             pythia.event[gluonDaugthFirstIndex].status() != -51) {
           std::cout << "ERROR: Status selected topologies"
                     << pythia.event[gluonDaugthFirstIndex].status()
                     << std::endl;
         }
-        // hcut*c=197.3MeV fm
-        // In NU, 1 = 0.2 GeV * fm
-        // 5 GeV-1 = fm
-        // GeV-1 = 0.2 fm
-        // X GeV-1 = 0.2 X fm
-        double Gformtime = 0.2 * pythia.event[gluonDaugthFirstIndex].eCalc() /
-                           (2 * pythia.event[gluonDaugthFirstIndex].m2Calc());
-	//double Q2gluon = (pythia.event[gluonDaugthFirstIndex].p() + pythia.event[gluonDaugthSecIndex].p()).m2Calc();
-        //double pnorm = (pythia.event[gluonDaugthFirstIndex].p() + pythia.event[gluonDaugthSecIndex].p()).pAbs();
-        //double Gformtime = 0.2 * pnorm/Q2gluon;
-	//std::cout<<"Gformtime="<<Gformtime<<std::endl;
-        hGformtimevsGluonE->Fill(pythia.event[mothercharmFirstIndex].eCalc(),
-                                 Gformtime);
+	//FIXME: from here below calculations are made
+	double pt1 = v1.Pt();
+	double pt2 = v2.Pt();
+	double ptg = vgfromcharms.Pt();
+	double eta1 = v1.Eta();
+	double eta2 = v2.Eta();
+	double phi1 = v1.Phi();
+	double phi2 = v2.Phi();
+        double r =
+            sqrt((eta2 - eta1) * (eta2 - eta1) + (phi2 - phi1) * (phi2 - phi1));
+        double pxconserv = (v1.Px() + v2.Px() - vg.Px())/vg.Px();
+        double Gformtime_thr = 0.2 * pythia.event[gluonDaugthFirstIndex].eCalc() /
+                                (2 * 1.5*1.5);
+        double Q2gluonfromtwocharms = vgfromcharms.M2();
+        double Qgluonfromtwocharms = vgfromcharms.M();
+        //std::cout<<"diff % E from gluon and from sum of charms=" 
+	//	 <<(vgfromcharms.E()-vg.E())/vg.E()<<","<<vgfromcharms.E()<<","<<vg.E()<<std::endl;
+        double Egluonfromtwocharms = vgfromcharms.E();
+        double Gformtime =  0.2 *  Egluonfromtwocharms/Q2gluonfromtwocharms;
+	
+	//FIXME: from here below only histogram filling
+        hPt1Pt2->Fill(pt1, pt2);
+        hPt1vsPtg->Fill(ptg, pt1);
+        hPxConservat->Fill(pxconserv);
+        hetaG->Fill(vgfromcharms3.Eta());
+        hdeltaR->Fill(r);
+        hdeltaRvsGluonE->Fill(Egluonfromtwocharms, r);
+        hInvmassvsGluonE->Fill(Egluonfromtwocharms, Qgluonfromtwocharms);
+        hInvmass->Fill(Qgluonfromtwocharms);
+        hGformtimevsGluonE->Fill(Egluonfromtwocharms, Gformtime);
 	hGformtimevsDeltaR->Fill(r, Gformtime);
-        TLorentzVector vg(pythia.event[mothercharmFirstIndex].e(),
-                          pythia.event[mothercharmFirstIndex].px(),
-                          pythia.event[mothercharmFirstIndex].py(),
-                          pythia.event[mothercharmFirstIndex].pz());
-        TLorentzVector v1(pythia.event[gluonDaugthFirstIndex].e(),
-                          pythia.event[gluonDaugthFirstIndex].px(),
-                          pythia.event[gluonDaugthFirstIndex].py(),
-                          pythia.event[gluonDaugthFirstIndex].pz());
-        TLorentzVector v2(pythia.event[gluonDaugthSecIndex].e(),
-                          pythia.event[gluonDaugthSecIndex].px(),
-                          pythia.event[gluonDaugthSecIndex].py(),
-                          pythia.event[gluonDaugthSecIndex].pz());
-        TVector3 pg = vg.Vect();
-        TVector3 p1 = v1.Vect();
-        TVector3 p2 = v2.Vect();
-        // Perp is the transverse difference in radial coordinate system (so
-        // defined positive)
-        Double_t ppv1_2 = p1.Perp(pg);
-        hPperpGformtime->Fill(Gformtime, ppv1_2);
         hPtcharmvsGformtime->Fill(Gformtime, pt1);
       }
       // End of event loop. Statistics. Histogram. Done.
@@ -289,18 +263,21 @@ int main(int argc, char *argv[]) {
   hetaG->Write();
   hdeltaR->Write();
   hdeltaRvsGluonE->Write();
-  hPtcharmvsGluonE->Write();
-  TProfile *pPtcharmvsGluonE =
-      (TProfile *)hPtcharmvsGluonE->ProfileX("pPtcharmvsGluonE");
-  pPtcharmvsGluonE->GetYaxis()->SetTitle("p_{T} charm  (GeV)");
-  pPtcharmvsGluonE->GetXaxis()->SetTitle("E_{g} (GeV)");
-  pPtcharmvsGluonE->Write();
+  hPt1vsPtg->Write();
+  TProfile *pPt1vsPtg =
+      (TProfile *)hPt1vsPtg->ProfileX("pPt1vsPtg");
+  pPt1vsPtg->GetYaxis()->SetTitle("p^{c1}_{T} (GeV/c)");
+  pPt1vsPtg->GetXaxis()->SetTitle("p^{g}_{T} (GeV/c)");
+  pPt1vsPtg->Write();
   hPt1Pt2->Write();
   TProfile *pPt1Pt2 = (TProfile *)hPt1Pt2->ProfileX("pPt1Pt2");
-  pPt1Pt2->GetYaxis()->SetTitle("p_{T} HQ-1 (GeV)");
-  pPt1Pt2->GetXaxis()->SetTitle("p_{T} HQ-2 (GeV)");
+  pPt1Pt2->GetYaxis()->SetTitle("p^{c1}_{T} (GeV/c)");
+  pPt1Pt2->GetXaxis()->SetTitle("p^{c2}_{T} (GeV/c)");
   pPt1Pt2->Write();
   hInvmassvsGluonE->Write();
+  TProfile *pInvmassvsGluonE = (TProfile *)hInvmassvsGluonE->ProfileX("pInvmassvsGluonE");
+  pInvmassvsGluonE->GetYaxis()->SetTitle("m_{c#bar{c}} (GeV)");
+  pInvmassvsGluonE->GetXaxis()->SetTitle("E_{g} (GeV)");
   hInvmass->Write();
   TProfile *pGformtimevsGluonE =
       (TProfile *)hGformtimevsGluonE->ProfileX("pGformtimevsGluonE");
@@ -308,12 +285,6 @@ int main(int argc, char *argv[]) {
   pGformtimevsGluonE->GetYaxis()->SetTitle("Formation time (fm/c)");
   pGformtimevsGluonE->GetXaxis()->SetTitle("E_{g} (GeV)");
   pGformtimevsGluonE->Write();
-  hPperpGformtime->Write();
-  TProfile *pPperpGformtime =
-      (TProfile *)hPperpGformtime->ProfileX("pPperpGformtime");
-  pPperpGformtime->GetYaxis()->SetTitle("c-gluon <q_{T}>");
-  pPperpGformtime->GetXaxis()->SetTitle("Formation time (fm/c)");
-  pPperpGformtime->Write();
   hPtcharmvsGformtime->Write();
   TProfile *pPtcharmvsGformtime =
       (TProfile *)hPtcharmvsGformtime->ProfileX("pPtcharmvsGformtime");
