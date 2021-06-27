@@ -64,9 +64,12 @@ int main(int argc, char *argv[]) {
   float eCM = node["eCM"].as<float>();
   float pTHatMin = node["pTHatMin"].as<float>();
   float minEgluon = node["minEgluon"].as<float>();
+  float maxabsEtaGluon = node["maxabsEtaGluon"].as<float>();
   const std::string pythiamode = node["pythiamode"].as<std::string>();
   const std::string outputfile = node["outputfile"].as<std::string>();
   const std::string extramode = node["extramode"].as<std::string>();
+  bool ISR = node["ISR"].as<bool>();
+  bool FSR = node["FSR"].as<bool>();
 
   // END OF CONFIGURATION
 
@@ -80,8 +83,10 @@ int main(int argc, char *argv[]) {
   pythia.readString(Form("Beams:idB = %d", beamidB));
   pythia.readString(Form("Beams:eCM = %f", eCM));
   pythia.readString(Form("PhaseSpace:pTHatMin = %f", pTHatMin));
-  // pythia.readString("PartonLevel:FSR = off");
-  pythia.readString("PartonLevel:ISR = off");
+  if (FSR) pythia.readString("PartonLevel:FSR = on");
+  else pythia.readString("PartonLevel:FSR = off");
+  if (ISR) pythia.readString("PartonLevel:ISR = on");
+  else pythia.readString("PartonLevel:ISR = off");
 
   pythia.readString("Random:setSeed = on");
   pythia.readString(Form("Random:seed = %d", cislo));
@@ -139,8 +144,13 @@ int main(int argc, char *argv[]) {
       new TH1F("hInvmass", ";mass (c#bar{c});Entries", 100., 0, 20.);
   // Gluon formation time vs Gluon energy
   TH2F *hGformtimevsGluonE =
-      new TH2F("hGformtimevsGluonE", ";gluon energy; formation time(fm/c)", 200,
-               0., 200., 200., 0, 200.);
+      new TH2F("hGformtimevsGluonE", ";gluon energy; formation time(fm/c)", 50,
+               0., 500., 200., 0, 20.);
+  // perperdicular component of the 3 momentum c vs cbar vs gluon formation time
+  // Gluon formation time vs Gluon energy
+  TH2F *hGformtimevsDeltaR =
+      new TH2F("hGformtimevsDeltaR", ";#Delta R; formation time(fm/c)", 300,
+               0., 3., 200., 0, 20.);
   // perperdicular component of the 3 momentum c vs cbar vs gluon formation time
   TH2F *hPperpGformtime =
       new TH2F("hPperpGformtime", ";formation time (fm/c); q_{perp} (GeV)", 100,
@@ -186,21 +196,6 @@ int main(int argc, char *argv[]) {
                pdggluonDaugthSecIndex == -hqpdg)))
           continue;
         int ndaughters = gluonDaugthSecIndex - gluonDaugthFirstIndex + 1;
-        if ((mothercharmSecIndex - mothercharmFirstIndex) != 0 &&
-            mothercharmSecIndex != 0) {
-          // std::cout << "ATTENTION: the charm quark has "
-          //          << mothercharmSecIndex - mothercharmFirstIndex + 1
-          //          << "mothers, it is not a splitting!" << std::endl;
-          // pythia.event.list();
-          // std::cout<<"charm index"<<gluonDaugthFirstIndex<<std::endl;
-          // std::cout<<"charm index"<<gluonDaugthSecIndex<<std::endl;
-          // return 0;
-          // for (int ind=mothercharmSecIndex; ind<=mothercharmFirstIndex;
-          // ind++){
-          //  std::cout<<pythia.event[ind].id()<<std::endl;
-          //}
-          continue;
-        }
         if (ndaughters != 2) {
           std::cout << "ATTENTION: the gluon has more than two daugthers"
                     << ndaughters << std::endl;
@@ -212,7 +207,7 @@ int main(int argc, char *argv[]) {
         if (!matchingparton)
           continue;
         if (pythia.event[mothercharmFirstIndex].e() < minEgluon ||
-            std::abs(pythia.event[mothercharmFirstIndex].eta()) > 1.)
+            std::abs(pythia.event[mothercharmFirstIndex].eta()) > maxabsEtaGluon)
           continue;
         // pythia.event.list();
         // std::cout<<"charm index"<<gluonDaugthFirstIndex<<std::endl;
@@ -256,8 +251,13 @@ int main(int argc, char *argv[]) {
         // X GeV-1 = 0.2 X fm
         double Gformtime = 0.2 * pythia.event[gluonDaugthFirstIndex].eCalc() /
                            (2 * pythia.event[gluonDaugthFirstIndex].m2Calc());
+	//double Q2gluon = (pythia.event[gluonDaugthFirstIndex].p() + pythia.event[gluonDaugthSecIndex].p()).m2Calc();
+        //double pnorm = (pythia.event[gluonDaugthFirstIndex].p() + pythia.event[gluonDaugthSecIndex].p()).pAbs();
+        //double Gformtime = 0.2 * pnorm/Q2gluon;
+	//std::cout<<"Gformtime="<<Gformtime<<std::endl;
         hGformtimevsGluonE->Fill(pythia.event[mothercharmFirstIndex].eCalc(),
                                  Gformtime);
+	hGformtimevsDeltaR->Fill(r, Gformtime);
         TLorentzVector vg(pythia.event[mothercharmFirstIndex].e(),
                           pythia.event[mothercharmFirstIndex].px(),
                           pythia.event[mothercharmFirstIndex].py(),
@@ -319,6 +319,12 @@ int main(int argc, char *argv[]) {
       (TProfile *)hPtcharmvsGformtime->ProfileX("pPtcharmvsGformtime");
   pPtcharmvsGformtime->Write();
   hPxConservat->Write();
+  hGformtimevsDeltaR->Write();
+  TProfile *pGformtimevsDeltaR =
+      (TProfile *)hGformtimevsDeltaR->ProfileX("pGformtimevsDeltaR");
+  pGformtimevsDeltaR->GetYaxis()->SetTitle("Formation time (fm/c)");
+  pGformtimevsDeltaR->GetXaxis()->SetTitle("#Delta R(c\bar{c})");
+
   fout->Write();
   return 0;
 }
