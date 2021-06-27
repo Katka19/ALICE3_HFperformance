@@ -134,7 +134,7 @@ int main(int argc, char *argv[]) {
                100., 100., 0, 3.);
   TH2F *hInvmassvsGluonE =
       new TH2F("hInvmassvsGluonE", ";E_{g} (GeV);mass(c#bar{c}) (GeV/c^{2})",
-               200, 0., 200., 200., 0, 200.);
+               2000, 0., 200., 2000., 0, 200.);
   TH2F *hGformtimevsGluonE =
       new TH2F("hGformtimevsGluonE", ";E_{g} (GeV); formation time(fm/c)", 200,
                0., 200., 200., 0, 20.);
