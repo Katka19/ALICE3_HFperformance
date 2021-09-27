@@ -1,16 +1,33 @@
 Lambda_c:
-  pp14p0:
-    absy1p44:
+  PbPb5p02:
+    absy1p0:
       ymin: 40
       ymax: 10000000
-      binning: [0.,1.,2.,4.,6.,8.,10.]
-      efffile: ../InputsExp/Lc_ptdep_pp14p0_absy1p44_scenario3/efficiencies.root
+      binning: [0.,1.,2.,3.,4.,5.,6.,8.,12.,24.,36.]
+      efffile: ../InputsExp/Lc_ptdep_PbPb5p02_absy1p0/efficiencies.root
       histoeff: eff
-      bkgfile: ../InputsExp/Lc_ptdep_pp14p0_absy1p44_scenario3/bkgperevent.root
-      histobkg: hbkg_fromsidebands
+      bkgfile: ../InputsExp/Lc_ptdep_PbPb5p02_absy1p0/bkgperevent.root
+      histobkg: hBkgPerEvent
+      raafile: ../InputsTheory/Lambda_c_ptdep_TAMU_PbPb5p02_cent3050_absy0p5.root
+      historaa: RaaSemi
+      #raafile: ../InputsTheory/Lambda_c_ptdep_TAMU_PbPb5p02_cent010_absy0p5.root
+      #historaa: RaaCentral
       theoryfile: ../InputsTheory/Lambda_c_ptdep_Pyhia8mode2_pp14p0_absy1p44.root
       histoyield: hLccrossvspt
       histoyield_norm: hLccrossvspt
+#Lambda_c:
+#  pp14p0:
+#    absy1p44:
+#      ymin: 40
+#      ymax: 10000000
+#      binning: [0.,1.,2.,4.,6.,8.,10.]
+#      efffile: ../InputsExp/Lc_ptdep_pp14p0_absy1p44_scenario3/efficiencies.root
+#      histoeff: eff
+#      bkgfile: ../InputsExp/Lc_ptdep_pp14p0_absy1p44_scenario3/bkgperevent.root
+#      histobkg: hbkg_fromsidebands
+#      theoryfile: ../InputsTheory/Lambda_c_ptdep_Pyhia8mode2_pp14p0_absy1p44.root
+#      histoyield: hLccrossvspt
+#      histoyield_norm: hLccrossvspt
 Jpsitoee:
   pp14p0:
     absy1p44:

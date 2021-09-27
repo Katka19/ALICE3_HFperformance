@@ -15,8 +15,8 @@ in a given collision system. The ingredients are:
     - expected signal yield / event = dN/dpT * binwidth * BR * efficiency
 """
 
-def analysis(hadron="Lambda_c", collision="pp14p0", yrange="absy3p0", \
-        brmode="central", model="Pyhia8mode2", use_unnorm=1):
+def analysis(hadron="Lambda_c", collision="pp14p0", yrange="absy1p44", \
+        brmode="central", model="Pythia8mode2", Ncoll="Ncoll010", use_unnorm=1):
     gStyle.SetOptStat(0)
     with open(r'databases/significance.yaml') as filesignificance:
         paramsignificance = yaml.load(filesignificance, Loader=yaml.FullLoader)
@@ -25,6 +25,7 @@ def analysis(hadron="Lambda_c", collision="pp14p0", yrange="absy3p0", \
     #bin of the final analysis, has to be the binning of efficiency, bkg histos
     binanal = array('d', paramsignificance[hadron][collision][yrange]["binning"])
     nfileyieldth = paramsignificance[hadron][collision][yrange]["theoryfile"]
+    nfileraath = paramsignificance[hadron][collision][yrange]["raafile"]
 
     nfileeff = paramsignificance[hadron][collision][yrange]["efffile"]
     nhistoeff = paramsignificance[hadron][collision][yrange]["histoeff"]
@@ -32,6 +33,7 @@ def analysis(hadron="Lambda_c", collision="pp14p0", yrange="absy3p0", \
     nhistobkg = paramsignificance[hadron][collision][yrange]["histobkg"]
     nhistoyieldth = paramsignificance[hadron][collision][yrange]["histoyield"]
     nhistoyieldth_norm = paramsignificance[hadron][collision][yrange]["histoyield_norm"]
+    nhistoraath = paramsignificance[hadron][collision][yrange]["historaa"]
 
     with open(r'databases/general.yaml') as fileparamgen:
         paramgen = yaml.load(fileparamgen, Loader=yaml.FullLoader)
@@ -48,8 +50,12 @@ def analysis(hadron="Lambda_c", collision="pp14p0", yrange="absy3p0", \
     #nevt = 2.*1e9
     bratio = paramgen["branchingratio"][hadron][brmode]
     decaychannel = paramgen["latexparticle"][hadron]
+    ncoll = paramgen["statistics"][collision][Ncoll]
 
-    yieldmid = paramyields[model][collision][yrange][hadron]
+    #yieldmid = paramyields[model][collision][yrange][hadron]
+    yieldmid = paramyields[model][collision]["absy0p5"][hadron]
+    y_corr = paramyields[model][collision]["absy0p5"]["y_corr"] # correction for TAMU which is in |y|<0.5
+    y_corrPythia = 1.0/1.44 #correction factor for pp cross section which is |y|<1.44
     text = '%s, N_{ev} = %.0f 10^{12}' % (textmodel, nevt/1e12)
     text_a = '%s, %s, BR=%.2f%%' % (decaychannel, textrapid, bratio*100)
     text_b = 'ALICE3 projection, with IRIS, no PID, %s' % textcollision
@@ -68,19 +74,23 @@ def analysis(hadron="Lambda_c", collision="pp14p0", yrange="absy3p0", \
                                       #to yields, sigma=70000 mub
     else:
         histodndptth = fileyieldth.Get(nhistoyieldth_norm)
-        histodndptth.Scale(yieldmid)
+        histodndptth.Scale(yieldmid*y_corr)
 
     histoyieldth = histodndptth.Clone("histoyieldth")
 
+    fileraath = TFile(nfileraath);
+    historaath = fileraath.Get(nhistoraath)
+
     for ibin in range(histoyieldth.GetNbinsX()):
         binwdith = histoyieldth.GetBinWidth(ibin+1)
-        yieldperevent = histoyieldth.GetBinContent(ibin+1)*binwdith*bratio
+        yieldperevent = histoyieldth.GetBinContent(ibin+1)*y_corrPythia*binwdith*bratio*y_corr*ncoll*historaath.GetBinContent(ibin+1)
         histoyieldth.SetBinContent(ibin+1, yieldperevent)
         histoyieldth.SetBinError(ibin+1, 0.)
     histoyieldth = histoyieldth.Rebin(len(binanal)-1, \
              "histoyieldth", binanal)
     histosignfperevent = histoyieldth.Clone("histosignfperevent")
     histosignf = histoyieldth.Clone("histosignf")
+    histosignal = histoyieldth.Clone("histosignal")
     histosigoverbkg = histoyieldth.Clone("histosigoverbkg")
 
     canvas = TCanvas("canvas", "A Simple Graph Example", 881, 176, 668, 616)
@@ -125,6 +135,11 @@ def analysis(hadron="Lambda_c", collision="pp14p0", yrange="absy3p0", \
         histosignfperevent.SetBinError(ibin+1, 0.)
         histosignf.SetBinContent(ibin+1, significanceperevent*sqrt(nevt))
         histosignf.SetBinError(ibin+1, 0.)
+        histosignal.SetBinContent(ibin+1, signalperevent*nevt)
+        if histosignf.GetBinContent(ibin+1) != 0:
+            histosignal.SetBinError(ibin+1, 1./histosignfperevent.GetBinContent(ibin+1))
+        else:
+            histosignal.SetBinError(ibin+1, 0.)
         histosigoverbkg.SetBinContent(ibin+1, signaloverbkg)
         histosigoverbkg.SetBinError(ibin+1, 0.)
 
@@ -167,8 +182,8 @@ def analysis(hadron="Lambda_c", collision="pp14p0", yrange="absy3p0", \
     histosignfperevent.Write()
     histoyieldth.Write()
     histosignf.Write()
+    histosignal.Write()
     histodndptth.Write()
     histosigoverbkg.Write()
-#analysis("Lambda_c", "pp14p0", "absy1p44", "central", "Pyhia8mode2", 1)
-analysis("Jpsitoee", "pp14p0", "absy1p44", "central", "Pyhia8monash", 1)
-analysis("X3872", "pp14p0", "absy1p44", "central", "Pyhia8monash", 1)
+analysis("Lambda_c", "PbPb5p02", "absy1p0", "central", "TAMU", "Ncoll3050", 1)
+#analysis("Lambda_c", "PbPb2p76", "absy1p0", "central", "Stat_ChoLee_2", 0)
