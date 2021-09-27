@@ -74,8 +74,8 @@ void BookHistos();
 
 //====================================================================================================================================================
 
-void GetBkgPerEventAndEff(const char* signalfilename,
-			  const char* bkgfilename,
+void GetBkgPerEventAndEff(const char* signalfilename, // ./data/AnalysisResults_train11813_ppSignal.root
+			  const char* bkgfilename, // ./data/AnalysisResults_train11812_PbPbbgd.root
 			  const process_t channel) {
   
   mystyle();
