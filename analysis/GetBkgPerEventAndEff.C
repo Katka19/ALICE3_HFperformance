@@ -59,7 +59,9 @@ const Int_t maxPolDegree = 4;
 TCanvas *cnvSig=0, *cnvBkg=0, *cnvBkgperEvents=0, *cnvEfficiency=0;
 
 TH1D *hBkgPerEvent=0, *hEfficiency=0, *hEfficiencyNoPID=0, *hMassSig[nMaxPtBins]={0}, *hMassBkg[nMaxPtBins]={0};
-TH2F *hMassVsPtSig=0, *hMassVsPtBkg=0;
+TH2F *hMassVsPtSig=0;//, *hMassVsPtBkg=0;
+TH2D *hMassVsPtBkg=0;
+TH3F *hMassV2PtBkg3D=0;
 
 TF1 *fitBkg[nMaxPtBins]={0}, *fitBkgSideBands[nMaxPtBins]={0}, *fitSig[nMaxPtBins]={0};
 
@@ -76,7 +78,8 @@ void BookHistos();
 
 void GetBkgPerEventAndEff(const char* signalfilename, // ./data/AnalysisResults_train11813_ppSignal.root
 			  const char* bkgfilename, // ./data/AnalysisResults_train11812_PbPbbgd.root
-			  const process_t channel) {
+			  const process_t channel,
+        TString centrality) {
   
   mystyle();
 
@@ -96,20 +99,34 @@ void GetBkgPerEventAndEff(const char* signalfilename, // ./data/AnalysisResults_
   hMassVsPtSig = (TH2F*) dir_sig->Get(histNameSig[channel]);
   hMassVsPtSig -> SetName("hMassVsPtSig");
 
-  hMassVsPtBkg = (TH2F*) dir_bkg->Get(histNameBkg[channel]);
+  int lowPercEdge = 0;
+  int upPercEdge = 0;
+  if(centrality.Data() == std::string("010")) {
+    lowPercEdge = 5900; // 0-10%
+    upPercEdge = 10000;
+  }else { // 30-50%
+    lowPercEdge = 1240; // 30-50%
+    upPercEdge = 3006;
+  }
+
+  //hMassVsPtBkg = (TH2F*) dir_bkg->Get(histNameBkg[channel]);
+  hMassV2PtBkg3D = (TH3F*) dir_bkg->Get(histNameBkg[channel]);
+  hMassV2PtBkg3D->GetZaxis()->SetRangeUser(lowPercEdge, upPercEdge);
+  hMassVsPtBkg = (TH2D*) hMassV2PtBkg3D->Project3D("yx");
   hMassVsPtBkg -> SetName("hMassVsPtBkg");
 
   Double_t nEventsBkg = -1;
-  //TH1F *hCount = (TH1F*) input_bkg->Get("qa-global-observables/eventCount");
-  TH1F *hCount = (TH1F*) input_bkg->Get("hf-tag-sel-collisions/hEvents");
+  //TH1F *hCount = (TH1F*) input_bkg->Get("hf-tag-sel-collisions/hEvents");
+  TH1F *hCount = (TH1F*) input_bkg->Get("hf-task-lc/hMultiplicity");
   if (!hCount) {
     nEventsBkg = 20e6;
     printf("\n********* WARNING: cannot retrieve bkg number of events, using nEventsBkg = %d *********\n\n",Int_t(nEventsBkg));
   }
   else {
-    nEventsBkg = hCount->GetBinContent(1);
-    //printf("nEventsBkg = %d, read from qa-global-observables/eventCount\n",Int_t(nEventsBkg));
+    //nEventsBkg = hCount->GetBinContent(1);
+    nEventsBkg = hCount->Integral(hCount->GetXaxis()->FindBin(lowPercEdge), hCount->GetXaxis()->FindBin(upPercEdge));
     printf("nEventsBkg = %d, read from hf-tag-sel-collisions/hEvents\n",Int_t(nEventsBkg));
+    
   }
   
   // check of consistency for hMassVsPtSig vs hMassVsPtBkg (same pt binning)
@@ -232,7 +249,7 @@ void GetBkgPerEventAndEff(const char* signalfilename, // ./data/AnalysisResults_
   hEfficiency->Write();
   fileOutEff->Close();
  
-  TFile *fileOutBkgPerEvents = new TFile(Form("bkgPerEvents_%s.root",hfTaskLabel[channel]),"recreate");
+  TFile *fileOutBkgPerEvents = new TFile(Form("bkgPerEvents_%s_%scent_test.root",hfTaskLabel[channel], centrality.Data()),"recreate");
   cnvBkgperEvents -> cd();
   cnvBkgperEvents -> SetLogy();
   hBkgPerEvent -> Draw("e ][");

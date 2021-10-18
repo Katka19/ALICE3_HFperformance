@@ -25,10 +25,17 @@ statistics:
   PbPb5p02: 
     sigmaAA_b: 7.8 #FIXME these are copied from 5.52 TeV
     lumiAA_monthi_invnb: 4.92 #FIXME these are copied from 5.52 TeV
-    #Taa010: 23.42 # from https://alice-notes.web.cern.ch/system/files/notes/public/711/2018-06-18-ALICE_public_note.pdf
-    #Taa3050: 3.82 
-    Ncoll010: 1583 # from https://alice-notes.web.cern.ch/system/files/notes/public/711/2018-06-18-ALICE_public_note.pdf
-    Ncoll3050: 258.2 
+    # from https://alice-notes.web.cern.ch/system/files/notes/public/711/2018-06-18-ALICE_public_note.pdf
+    cent010:
+      #Taa: 23.42 
+      Ncoll: 1583 
+      EventScaling: 10
+    cent3050:
+      #Taa: 3.82 
+      Ncoll: 258.2 
+      EventScaling: 5
+    cent0100:
+      EventScaling: 1
   PbPb5p52: 
     sigmaAA_b: 7.8
     lumiAA_monthi_invnb: 4.92 
