@@ -60,8 +60,8 @@ TCanvas *cnvSig=0, *cnvBkg=0, *cnvBkgperEvents=0, *cnvEfficiency=0;
 
 TH1D *hBkgPerEvent=0, *hEfficiency=0, *hEfficiencyNoPID=0, *hMassSig[nMaxPtBins]={0}, *hMassBkg[nMaxPtBins]={0};
 TH2F *hMassVsPtSig=0;//, *hMassVsPtBkg=0;
-TH2D *hMassVsPtBkg=0;
-TH3F *hMassV2PtBkg3D=0;
+TH2D *hMassVsPtBkg=0;//, *hMassVsPtSig=0;
+TH3F *hMassVsPtBkg3D=0;//, *hMassVsPtSig3D=0;
 
 TF1 *fitBkg[nMaxPtBins]={0}, *fitBkgSideBands[nMaxPtBins]={0}, *fitSig[nMaxPtBins]={0};
 
@@ -79,7 +79,8 @@ void BookHistos();
 void GetBkgPerEventAndEff(const char* signalfilename, // ./data/AnalysisResults_train11813_ppSignal.root
 			  const char* bkgfilename, // ./data/AnalysisResults_train11812_PbPbbgd.root
 			  const process_t channel,
-        TString centrality) {
+        TString centrality, // 010 or 3050
+        TString period) { // d9m or d9n
   
   mystyle();
 
@@ -96,23 +97,36 @@ void GetBkgPerEventAndEff(const char* signalfilename, // ./data/AnalysisResults_
   auto dir_sig_mc   = (TDirectory*) input_sig->GetDirectory(Form("hf-task-%s-mc",hfTaskLabel[channel]));
   auto dir_bkg   = (TDirectory*) input_bkg->GetDirectory(Form("hf-task-%s",hfTaskLabel[channel]));
 
-  hMassVsPtSig = (TH2F*) dir_sig->Get(histNameSig[channel]);
-  hMassVsPtSig -> SetName("hMassVsPtSig");
-
   int lowPercEdge = 0;
   int upPercEdge = 0;
-  if(centrality.Data() == std::string("010")) {
-    lowPercEdge = 5900; // 0-10%
-    upPercEdge = 10000;
-  }else { // 30-50%
-    lowPercEdge = 1240; // 30-50%
-    upPercEdge = 3006;
+  if(period.Data() == std::string("d9m")) {
+    if(centrality.Data() == std::string("010")) {
+      lowPercEdge = 5900; // 0-10%
+      upPercEdge = 10000;
+    }else { // 30-50%
+      lowPercEdge = 1240; // 30-50%
+      upPercEdge = 3006;
+    }
+  }else {
+    if(centrality.Data() == std::string("010")) {
+      lowPercEdge = 4494; // 0-10%
+      upPercEdge = 10000;
+    }else { // 30-50%
+      lowPercEdge = 898; // 30-50%
+      upPercEdge = 2223;
+    }
   }
 
+  hMassVsPtSig = (TH2F*) dir_sig->Get(histNameSig[channel]);
+  //hMassVsPtSig3D = (TH3F*) dir_sig->Get(histNameSig[channel]);
+  //hMassVsPtSig3D->GetZaxis()->SetRangeUser(lowPercEdge, upPercEdge);
+  //hMassVsPtSig = (TH2D*) hMassVsPtSig3D->Project3D("yx");
+  hMassVsPtSig -> SetName("hMassVsPtSig");
+
   //hMassVsPtBkg = (TH2F*) dir_bkg->Get(histNameBkg[channel]);
-  hMassV2PtBkg3D = (TH3F*) dir_bkg->Get(histNameBkg[channel]);
-  hMassV2PtBkg3D->GetZaxis()->SetRangeUser(lowPercEdge, upPercEdge);
-  hMassVsPtBkg = (TH2D*) hMassV2PtBkg3D->Project3D("yx");
+  hMassVsPtBkg3D = (TH3F*) dir_bkg->Get(histNameBkg[channel]);
+  hMassVsPtBkg3D->GetZaxis()->SetRangeUser(lowPercEdge, upPercEdge);
+  hMassVsPtBkg = (TH2D*) hMassVsPtBkg3D->Project3D("yx");
   hMassVsPtBkg -> SetName("hMassVsPtBkg");
 
   Double_t nEventsBkg = -1;
@@ -245,11 +259,11 @@ void GetBkgPerEventAndEff(const char* signalfilename, // ./data/AnalysisResults_
   cnvSig -> SaveAs("./SigFit.pdf");
   cnvBkg -> SaveAs("./BkgFit.pdf");
 
-  TFile *fileOutEff = new TFile(Form("efficiency_%s.root",hfTaskLabel[channel]),"recreate");
+  TFile *fileOutEff = new TFile(Form("efficiency_%s_y1p44.root",hfTaskLabel[channel]),"recreate");
   hEfficiency->Write();
   fileOutEff->Close();
  
-  TFile *fileOutBkgPerEvents = new TFile(Form("bkgPerEvents_%s_%scent_test.root",hfTaskLabel[channel], centrality.Data()),"recreate");
+  TFile *fileOutBkgPerEvents = new TFile(Form("bkgPerEvents_%s_%scent_%s_y1p44.root",hfTaskLabel[channel], centrality.Data(), period.Data()),"recreate");
   cnvBkgperEvents -> cd();
   cnvBkgperEvents -> SetLogy();
   hBkgPerEvent -> Draw("e ][");

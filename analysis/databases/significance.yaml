@@ -19,6 +19,27 @@ Lambda_c:
         histobkg: hBkgPerEvent
         raafile: ../InputsTheory/Lambda_c_ptdep_TAMU_PbPb5p02_cent3050_absy0p5.root
         historaa: RaaSemi
+    absy1p44:
+      ymin: 40
+      ymax: 10000000
+      binning: [0.,1.,2.,3.,4.,5.,6.,8.,12.,24.,36.]
+      efffile: ../InputsExp/Lc_ptdep_PbPb5p02_absy1p0/efficiencies.root
+      histoeff: eff
+      theoryfile: ../InputsTheory/Lambda_c_ptdep_Pyhia8mode2_pp14p0_absy1p44.root
+      histoyield: hLccrossvspt
+      histoyield_norm: hLccrossvspt
+      cent010:
+        #bkgfile: ../InputsExp/Lc_ptdep_PbPb5p02_absy1p44/bkgPerEvents_lc_010cent_d9m_y1p44.root
+        bkgfile: ../InputsExp/Lc_ptdep_PbPb5p02_absy1p44/bkgPerEvents_lc_010cent_d9n_y1p44.root
+        histobkg: hBkgPerEvent
+        raafile: ../InputsTheory/Lambda_c_ptdep_TAMU_PbPb5p02_cent010_absy0p5.root
+        historaa: RaaCentral
+      cent3050:
+        #bkgfile: ../InputsExp/Lc_ptdep_PbPb5p02_absy1p44/bkgPerEvents_lc_3050cent_d9m_y1p44.root
+        bkgfile: ../InputsExp/Lc_ptdep_PbPb5p02_absy1p44/bkgPerEvents_lc_3050cent_d9n_y1p44.root
+        histobkg: hBkgPerEvent
+        raafile: ../InputsTheory/Lambda_c_ptdep_TAMU_PbPb5p02_cent3050_absy0p5.root
+        historaa: RaaSemi
 #Lambda_c:
 #  pp14p0:
 #    absy1p44:
