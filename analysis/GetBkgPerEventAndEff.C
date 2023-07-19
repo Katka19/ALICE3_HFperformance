@@ -13,35 +13,33 @@
 
 using namespace std;
 
-enum proc_t{kJpsiToEE, kJpsiToMuMu, kXToPiPiEE, kXToPiPiMuMu, kXicc, kBplus, kChic1, kChic2, kNChannels};
+enum process_t{kLc, kJpsiToEE, kJpsiToMuMu, kXToPiPiEE, kXToPiPiMuMu, kXicc, kBplus, kNChannels};
 
-const char *hfTaskLabel[kNChannels] = {"jpsi",     "jpsiToMuMu",  "x",           "xToPiPiMuMu", "xicc",     "bplus",       "chic",        "chic"};
-const char *histNameSig[kNChannels] = {"hmassSig", "hMassRecSig", "hMassRecSig", "hMassRecSig", "hmassSig", "hMassRecSig", "hMassRecSig", "hMassRecSig"};
-const char *histNameBkg[kNChannels] = {"hmass",    "hMassRecBkg", "hMass",       "hMassRecBkg", "hmass",    "hMass",       "hMass",       "hMass"};
+const char *hfTaskLabel[kNChannels] = {"lc",    "jpsi",     "jpsiToMuMu",  "x",           "xToPiPiMuMu", "xicc",     "bplus"};
+const char *histNameSig[kNChannels] = {"hmass", "hmassSig", "hMassRecSig", "hMassRecSig", "hMassRecSig", "hmassSig", "hMassRecSig"};
+const char *histNameBkg[kNChannels] = {"hmass", "hmass",    "hMassRecBkg", "hMass",       "hMassRecBkg", "hmass",    "hMass"};
 
 const char *label[kNChannels] = {
+  "#Lambda_{c} #rightarrow p K #pi",
   "J/#psi #rightarrow ee",
   "J/#psi #rightarrow #mu#mu",
   "X #rightarrow J/#psi(ee) #pi#pi",
   "X #rightarrow J/#psi(#mu#mu) #pi#pi",
   "#Xi_{cc}^{++} #rightarrow #Xi_{c}^{+}#pi^{+}",
-  "B^{+} #rightarrow D^{0}#pi^{+}",
-  "#chi_{c1} #rightarrow J/#psi #gamma",
-  "#chi_{c2} #rightarrow J/#psi #gamma"
+  "B^{+} #rightarrow D^{0}#pi^{+}"
 };
 
-const Double_t massMin[kNChannels]  = {2.60, 2.60, 3.60, 3.60, 3.30, 4.60, 3.10, 3.10};
-const Double_t massMax[kNChannels]  = {3.55, 3.55, 4.10, 4.10, 3.90, 6.00, 4.00, 4.00};
+const Double_t massMin[kNChannels]  = {2.12, 2.60, 2.60, 3.60, 3.60, 3.30, 4.60};
+const Double_t massMax[kNChannels]  = {2.45, 3.55, 3.55, 4.10, 4.10, 3.90, 6.00};
 
 const Double_t massMean[kNChannels] = {
+  TDatabasePDG::Instance()->GetParticle(4122)->Mass(),  //2.286,
   TDatabasePDG::Instance()->GetParticle(443)->Mass(),
   TDatabasePDG::Instance()->GetParticle(443)->Mass(),
   3.872,
   3.872,
   TDatabasePDG::Instance()->GetParticle(4412)->Mass(),
-  TDatabasePDG::Instance()->GetParticle(521)->Mass(),
-  TDatabasePDG::Instance()->GetParticle(20443)->Mass(),
-  TDatabasePDG::Instance()->GetParticle(445)->Mass()
+  TDatabasePDG::Instance()->GetParticle(521)->Mass()
 };
 
 const Double_t nsigma = 3;
@@ -50,8 +48,7 @@ Int_t nPtBins = 0;
 const Int_t nMaxPtBins = 1000;
 Double_t ptBinLimits[nMaxPtBins] = {0};
 
-Double_t sidebandCount[2] = {0};    // upper and lower limit of the signal window for bkg counting
-Double_t sidebandFit[2] = {0};      // upper and lower limit of the signal window for bkg fitting
+Double_t sideband[2] = {0};    // upper and lower limit of the signal window
 
 // Control parameters for the description of the bkg with a polynomial function.
 // The description starts with a pol2 model, and if the bkg fit has a larger chi2/ndf than the chi2OverNDF_limit parameter,
@@ -62,17 +59,16 @@ const Int_t maxPolDegree = 4;
 TCanvas *cnvSig=0, *cnvBkg=0, *cnvBkgperEvents=0, *cnvEfficiency=0;
 
 TH1D *hBkgPerEvent=0, *hEfficiency=0, *hEfficiencyNoPID=0, *hMassSig[nMaxPtBins]={0}, *hMassBkg[nMaxPtBins]={0};
-TH2D *hMassVsPtSig=0, *hMassVsPtBkg=0;
+TH2F *hMassVsPtSig=0;//, *hMassVsPtBkg=0;
+TH2D *hMassVsPtBkg=0;//, *hMassVsPtSig=0;
+TH3F *hMassVsPtBkg3D=0;//, *hMassVsPtSig3D=0;
 
 TF1 *fitBkg[nMaxPtBins]={0}, *fitBkgSideBands[nMaxPtBins]={0}, *fitSig[nMaxPtBins]={0};
 
-Double_t fitPol(Double_t* var, Double_t* par);
-Double_t fitPolSideBands(Double_t* var, Double_t* par);
+Double_t fitPol(Double_t* x_var, Double_t* par);
+Double_t fitPolSideBands(Double_t* x_var, Double_t* par);
 
-Double_t fitExpoWithThreshold(Double_t* var, Double_t* par);
-Double_t fitExpoWithThresholdSideBands(Double_t* var, Double_t* par);
-
-void info(proc_t channel);
+void info(process_t channel);
 void mystyle();
 
 void BookCanvas();
@@ -80,9 +76,11 @@ void BookHistos();
 
 //====================================================================================================================================================
 
-void GetBkgPerEventAndEff(const char* signalfilename,
-			  const char* bkgfilename,
-			  const proc_t channel) {
+void GetBkgPerEventAndEff(const char* signalfilename, // ./data/AnalysisResults_train11813_ppSignal.root
+			  const char* bkgfilename, // ./data/AnalysisResults_train11812_PbPbbgd.root
+			  const process_t channel,
+        TString centrality, // 010 or 3050
+        TString period) { // d9m or d9n
   
   mystyle();
 
@@ -92,27 +90,57 @@ void GetBkgPerEventAndEff(const char* signalfilename,
 
   // Conneting directories from input files
   
-  TFile *input_sig = new TFile(signalfilename, "read");
-  TFile *input_bkg = new TFile(bkgfilename,    "read");
+  TFile *input_sig = new TFile(signalfilename, "read"); // pp ccbar enriched sample
+  TFile *input_bkg = new TFile(bkgfilename,    "read"); // PbPb MB sample
 
-  auto dir_sig   = (TDirectory*) input_sig->GetDirectory(Form("hf-task-%s-mc",hfTaskLabel[channel]));
+  auto dir_sig   = (TDirectory*) input_sig->GetDirectory(Form("hf-task-%s",hfTaskLabel[channel]));
+  auto dir_sig_mc   = (TDirectory*) input_sig->GetDirectory(Form("hf-task-%s-mc",hfTaskLabel[channel]));
   auto dir_bkg   = (TDirectory*) input_bkg->GetDirectory(Form("hf-task-%s",hfTaskLabel[channel]));
 
-  hMassVsPtSig = (TH2D*) dir_sig->Get(histNameSig[channel]);
+  int lowPercEdge = 0;
+  int upPercEdge = 0;
+  if(period.Data() == std::string("d9m")) {
+    if(centrality.Data() == std::string("010")) {
+      lowPercEdge = 5900; // 0-10%
+      upPercEdge = 10000;
+    }else { // 30-50%
+      lowPercEdge = 1240; // 30-50%
+      upPercEdge = 3006;
+    }
+  }else {
+    if(centrality.Data() == std::string("010")) {
+      lowPercEdge = 4494; // 0-10%
+      upPercEdge = 10000;
+    }else { // 30-50%
+      lowPercEdge = 898; // 30-50%
+      upPercEdge = 2223;
+    }
+  }
+
+  hMassVsPtSig = (TH2F*) dir_sig->Get(histNameSig[channel]);
+  //hMassVsPtSig3D = (TH3F*) dir_sig->Get(histNameSig[channel]);
+  //hMassVsPtSig3D->GetZaxis()->SetRangeUser(lowPercEdge, upPercEdge);
+  //hMassVsPtSig = (TH2D*) hMassVsPtSig3D->Project3D("yx");
   hMassVsPtSig -> SetName("hMassVsPtSig");
 
-  hMassVsPtBkg = (TH2D*) dir_bkg->Get(histNameBkg[channel]);
+  //hMassVsPtBkg = (TH2F*) dir_bkg->Get(histNameBkg[channel]);
+  hMassVsPtBkg3D = (TH3F*) dir_bkg->Get(histNameBkg[channel]);
+  hMassVsPtBkg3D->GetZaxis()->SetRangeUser(lowPercEdge, upPercEdge);
+  hMassVsPtBkg = (TH2D*) hMassVsPtBkg3D->Project3D("yx");
   hMassVsPtBkg -> SetName("hMassVsPtBkg");
 
   Double_t nEventsBkg = -1;
-  TH1F *hCount = (TH1F*) input_bkg->Get("qa-global-observables/eventCount");
+  //TH1F *hCount = (TH1F*) input_bkg->Get("hf-tag-sel-collisions/hEvents");
+  TH1F *hCount = (TH1F*) input_bkg->Get("hf-task-lc/hMultiplicity");
   if (!hCount) {
     nEventsBkg = 20e6;
     printf("\n********* WARNING: cannot retrieve bkg number of events, using nEventsBkg = %d *********\n\n",Int_t(nEventsBkg));
   }
   else {
-    nEventsBkg = hCount->GetBinContent(1);
-    printf("nEventsBkg = %d, read from qa-global-observables/eventCount\n",Int_t(nEventsBkg));
+    //nEventsBkg = hCount->GetBinContent(1);
+    nEventsBkg = hCount->Integral(hCount->GetXaxis()->FindBin(lowPercEdge), hCount->GetXaxis()->FindBin(upPercEdge));
+    printf("nEventsBkg = %d, read from hf-tag-sel-collisions/hEvents\n",Int_t(nEventsBkg));
+    
   }
   
   // check of consistency for hMassVsPtSig vs hMassVsPtBkg (same pt binning)
@@ -124,6 +152,7 @@ void GetBkgPerEventAndEff(const char* signalfilename,
   }
 
   nPtBins = TMath::Min(hMassVsPtBkg->GetNbinsY(), nMaxPtBins);
+  nPtBins = nPtBins; 
   BookCanvas();
 
   for (int i = 0; i<nPtBins; i++) {
@@ -133,8 +162,8 @@ void GetBkgPerEventAndEff(const char* signalfilename,
 
   BookHistos();
 
-  auto hPtGenSig  = (TH1F*) dir_sig->Get("hPtGen");
-  auto hPtRecSig  = (TH1F*) dir_sig->Get("hPtRecSig");
+  auto hPtGenSig  = (TH1F*) dir_sig_mc->Get("hPtGen");
+  auto hPtRecSig  = (TH1F*) dir_sig_mc->Get("hPtRecSig");
   
   auto gp = (TH1D*) hPtGenSig->Rebin(nPtBins,"gp", ptBinLimits);
   auto rp = (TH1D*) hPtRecSig->Rebin(nPtBins,"eff",ptBinLimits);
@@ -158,12 +187,15 @@ void GetBkgPerEventAndEff(const char* signalfilename,
 
   for (int i = 0; i < nPtBins; i++) {
 
-    Int_t ptBin = i+1;
+    //Int_t ptBin = i+1;
+    Int_t ptBin = i;
+
+    if(i == 0) continue;
 
     // Projecting sig and bkg histos form TH2D objects
-    
-    hMassSig[i] = hMassVsPtSig->ProjectionX(Form("hMassSig_PtBin_%d", ptBin), ptBin, ptBin, "e");
-    hMassBkg[i] = hMassVsPtBkg->ProjectionX(Form("hMassBkg_PtBin_%d", ptBin), ptBin, ptBin, "e");
+   
+    hMassSig[i] = hMassVsPtSig->ProjectionX(Form("hMassSig_PtBin_%d", ptBin), ptBin, ptBin+1, "e");
+    hMassBkg[i] = hMassVsPtBkg->ProjectionX(Form("hMassBkg_PtBin_%d", ptBin), ptBin, ptBin+1, "e");
 
     if (hMassSig[i]->GetMaximum() < 20) hMassSig[i]->Rebin(2);
     
@@ -173,99 +205,65 @@ void GetBkgPerEventAndEff(const char* signalfilename,
     hMassSig[i]->SetTitle(Form("%2.1f < p_{T} < %2.1f",ptBinLimits[i],ptBinLimits[i+1]));
     hMassBkg[i]->SetTitle(Form("%2.1f < p_{T} < %2.1f",ptBinLimits[i],ptBinLimits[i+1]));
    
-    // Setting the fit functions for bkg and sig
+   // Setting the fit functions for bkg and sig
     
-    fitSig[i] = new TF1(Form("fitSig_%d",i),"gaus",massMean[channel]-5*hMassSig[i]->GetRMS(),massMean[channel]+5*hMassSig[i]->GetRMS());   
+    fitBkg[i]          = new TF1(Form("fitBkg_%d",i),          fitPol,          massMin[channel],massMax[channel],maxPolDegree+1);
+    fitBkgSideBands[i] = new TF1(Form("fitBkgSideBands_%d",i), fitPolSideBands, massMin[channel],massMax[channel],maxPolDegree+1);
+    //fitSig[i]          = new TF1(Form("fitSig_%d",i),"gaus",massMean[channel]-5*hMassSig[i]->GetRMS(),massMean[channel]+5*hMassSig[i]->GetRMS());
+    fitSig[i]          = new TF1(Form("fitSig_%d",i),"gaus",massMean[channel]-0.01,massMean[channel]+0.01);
+		    
+    fitBkg[i] -> SetNpx(10000);
     fitSig[i] -> SetNpx(10000);
 
     // Gaussian fit on the signal
 
     cnvSig -> cd(i+1);
 
-    hMassSig[i] -> Fit(fitSig[i],"Q","",massMean[channel]-5*hMassSig[i]->GetRMS(),massMean[channel]+5*hMassSig[i]->GetRMS());
+    //hMassSig[i] -> Fit(fitSig[i],"Q","",massMean[channel]-5*hMassSig[i]->GetRMS(),massMean[channel]+5*hMassSig[i]->GetRMS());
+    hMassSig[i] -> Fit(fitSig[i],"Q","",massMean[channel]-0.01,massMean[channel]+0.01);
     Double_t sigmaSig = fitSig[i]->GetParameter(2);
 
-    sidebandCount[0] = massMean[channel] - nsigma*sigmaSig;
-    sidebandCount[1] = massMean[channel] + nsigma*sigmaSig;
+    sideband[0] = massMean[channel] - nsigma*sigmaSig;
+    sideband[1] = massMean[channel] + nsigma*sigmaSig;
 
     // Fit of the bakground 
 
     cnvBkg -> cd(i+1);
 
-    if (channel != kChic1 && channel != kChic2) {
+    // we start with a 2nd order polynomial
+    Int_t nPolDegree = 2;
+    for (Int_t j=nPolDegree+1; j<=maxPolDegree; j++) fitBkgSideBands[i] -> FixParameter(j,0);
 
-      sidebandFit[0] = sidebandCount[0];
-      sidebandFit[1] = sidebandCount[1];
+    hMassBkg[i] -> Fit(fitBkgSideBands[i],"Q","",massMin[channel],massMax[channel]);
 
-      fitBkg[i]          = new TF1(Form("fitBkg_%d",i),          fitPol,          massMin[channel],massMax[channel],maxPolDegree+1);
-      fitBkgSideBands[i] = new TF1(Form("fitBkgSideBands_%d",i), fitPolSideBands, massMin[channel],massMax[channel],maxPolDegree+1);
-      fitBkg[i]          -> SetNpx(10000);
-      fitBkgSideBands[i] -> SetNpx(10000);
-
-      // we start with a 2nd order polynomial
-      Int_t nPolDegree = 2;
-      for (Int_t j=nPolDegree+1; j<=maxPolDegree; j++) fitBkgSideBands[i] -> FixParameter(j,0);
-      
+    while (fitBkgSideBands[i]->GetChisquare()/fitBkgSideBands[i]->GetNDF() > chi2OverNDF_limit && nPolDegree < maxPolDegree) {
+      nPolDegree++;
+      fitBkgSideBands[i] -> ReleaseParameter(nPolDegree);
       hMassBkg[i] -> Fit(fitBkgSideBands[i],"Q","",massMin[channel],massMax[channel]);
-      
-      while (fitBkgSideBands[i]->GetChisquare()/fitBkgSideBands[i]->GetNDF() > chi2OverNDF_limit && nPolDegree < maxPolDegree) {
-	nPolDegree++;
-	fitBkgSideBands[i] -> ReleaseParameter(nPolDegree);
-	hMassBkg[i] -> Fit(fitBkgSideBands[i],"Q","",massMin[channel],massMax[channel]);
-      }
-
     }
 
-    else {
+    for (Int_t j=0; j<=maxPolDegree; j++) fitBkg[i] -> SetParameter(j, fitBkgSideBands[i] -> GetParameter(j));
 
-      // adapting the sidebands to exlude the chi_c1 + chi_c2 region (2 sigma only, otherwise we loose too much arm leverage for the fit)
-
-      sidebandFit[0] = massMean[kChic1] - 2*sigmaSig;
-      sidebandFit[1] = massMean[kChic2] + 2*sigmaSig;
-
-      fitBkg[i]          = new TF1(Form("fitBkg_%d",i),          fitExpoWithThreshold,          massMin[channel],massMax[channel],5);
-      fitBkgSideBands[i] = new TF1(Form("fitBkgSideBands_%d",i), fitExpoWithThresholdSideBands, massMin[channel],massMax[channel],5);
-      fitBkg[i]          -> SetNpx(10000);
-      fitBkgSideBands[i] -> SetNpx(10000);
-
-      double threshold = 0;
-
-      for (int iBin=1; iBin<=hMassBkg[i]->GetNbinsX(); iBin++) {
-	if (hMassBkg[i]->GetBinContent(iBin) > 0) {
-	  threshold = hMassBkg[i] -> GetBinCenter(iBin);
-	  break;
-	}
-      }
-
-      hMassBkg[i] -> Fit("expo","","",3.6,4.0);
-      
-      fitBkgSideBands[i] -> SetParameters(threshold, 0.02, 0, hMassBkg[i]->GetFunction("expo")->GetParameter(0), TMath::Min(hMassBkg[i]->GetFunction("expo")->GetParameter(1),0.));
-      fitBkgSideBands[i] -> SetParLimits(0,threshold-0.2,threshold+0.2);
-      fitBkgSideBands[i] -> SetParLimits(1,0.001,0.1);
-      fitBkgSideBands[i] -> SetParLimits(2,0,hMassBkg[i]->GetBinContent(hMassBkg[i]->GetNbinsX()));
-      fitBkgSideBands[i] -> SetParLimits(4,-10,0);
-      hMassBkg[i] -> Fit(fitBkgSideBands[i],"Q","",massMin[channel],massMax[channel]); 
-      hMassBkg[i] -> Fit(fitBkgSideBands[i],"Q","",massMin[channel],massMax[channel]);
-      
-    }
-    
-    for (Int_t j=0; j<=fitBkgSideBands[i]->GetNpar(); j++) fitBkg[i] -> SetParameter(j, fitBkgSideBands[i] -> GetParameter(j));
-    
-    bkg = fitBkg[i] -> Integral(sidebandCount[0],sidebandCount[1])/hMassBkg[i]->GetBinWidth(1);
+    bkg = fitBkg[i] -> Integral(sideband[0],sideband[1])/hMassBkg[i]->GetBinWidth(1);
     bkg /= nEventsBkg;   // bkg is the expected background in the +/- 3 sigma window per MB event
-    
+
     // Evaluating significance and filling histos
-    
+       
     hBkgPerEvent -> SetBinContent(i+1, bkg);
     hBkgPerEvent -> SetBinError(i+1, 0.);
 
   }
 
-  TFile *fileOutEff = new TFile(Form("efficiency_%s.root",hfTaskLabel[channel]),"recreate");
+  gStyle->SetLineScalePS(1);
+
+  cnvSig -> SaveAs("./SigFit.pdf");
+  cnvBkg -> SaveAs("./BkgFit.pdf");
+
+  TFile *fileOutEff = new TFile(Form("efficiency_%s_y1p44_test.root",hfTaskLabel[channel]),"recreate");
   hEfficiency->Write();
   fileOutEff->Close();
  
-  TFile *fileOutBkgPerEvents = new TFile(Form("bkgPerEvents_%s.root",hfTaskLabel[channel]),"recreate");
+  TFile *fileOutBkgPerEvents = new TFile(Form("bkgPerEvents_%s_%scent_%s_y1p44_test.root",hfTaskLabel[channel], centrality.Data(), period.Data()),"recreate");
   cnvBkgperEvents -> cd();
   cnvBkgperEvents -> SetLogy();
   hBkgPerEvent -> Draw("e ][");
@@ -277,10 +275,10 @@ void GetBkgPerEventAndEff(const char* signalfilename,
 
 //====================================================================================================================================================
 
-Double_t fitPol(Double_t* var, Double_t* par) {
+Double_t fitPol(Double_t* x_var, Double_t* par) {
 
   Double_t result = par[0];
-  for (Int_t i=1; i<=maxPolDegree; i++) result += par[i] * TMath::Power(var[0], i);
+  for (Int_t i=1; i<=maxPolDegree; i++) result += par[i] * TMath::Power(x_var[0], i);
 
   return result;
   
@@ -288,48 +286,20 @@ Double_t fitPol(Double_t* var, Double_t* par) {
 
 //====================================================================================================================================================
 
-Double_t fitPolSideBands(Double_t* var, Double_t* par) {
+Double_t fitPolSideBands(Double_t* x_var, Double_t* par) {
 
-  if (sidebandFit[0] < var[0] && var[0] < sidebandFit[1]) {
+  if (sideband[0] < x_var[0] && x_var[0] < sideband[1]) {
     TF1::RejectPoint();
     return 0;
   }
   
-  return fitPol(var, par);
-    
+  return fitPol(x_var, par);
+
 }
 
 //====================================================================================================================================================
 
-Double_t fitExpoWithThreshold(Double_t* var, Double_t* par) {
-
-  Double_t meanThreshold = par[0];
-  Double_t x = var[0] - meanThreshold;
-  Double_t widthThreshold = par[1];
-  Double_t offset = par[2];
-  Double_t constExpo = par[3];
-  Double_t slopeExpo = par[4];
-
-  return 0.5 * (1. + TMath::Erf(x/widthThreshold)) * (offset + TMath::Exp(x*slopeExpo+constExpo));
-  
-}
-
-//====================================================================================================================================================
-
-Double_t fitExpoWithThresholdSideBands(Double_t* var, Double_t* par) {
-
-  if (sidebandFit[0] < var[0] && var[0] < sidebandFit[1]) {
-    TF1::RejectPoint();
-    return 0;
-  }
-  
-  return fitExpoWithThreshold(var, par);
-    
-}
-
-//====================================================================================================================================================
-
-void info(proc_t channel) {
+void info(process_t channel) {
 
   TLatex* t = new TLatex(8, 8, "ALICE3 O2 Performance");
   t->SetNDC();

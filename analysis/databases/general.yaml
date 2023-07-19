@@ -7,18 +7,35 @@ latexparticle:
   Jpsitoee: "J/#psi #rightarrow e^{+}e^{-}"
 text_string:
   pp14p0: "pp #sqrt{s}= 14 TeV"
+  PbPb2p76: "PbPb #sqrt{s_{NN}} = 2.76 TeV"
+  PbPb5p52: "PbPb #sqrt{s_{NN}} = 5.52 TeV"
+  PbPb5p02: "PbPb #sqrt{s_{NN}} = 5.02 TeV"
   absy3p0: "|y| < 3.0"
   absy2p0: "|y| < 2.0"
+  absy1p0: "|y| < 1.0"
   absy1p44: "|y| < 1.44"
-  Pyhia8mode2: "Pythia 8, mode = 2"
-  Pyhia8monash: "Pythia 8, monash tune"
+  TAMU: "TAMU"
+  Stat_ChoLee_2: "Stat Cho Lee"
+  Pythia8mode2: "Pythia 8, mode = 2"
+  Pythia8monash: "Pythia 8, monash tune"
 statistics:
   PbPb2p76: 
     sigmaAA_b: 7.8 #FIXME these are copied from 5.52 TeV 
     lumiAA_monthi_invnb: 4.92 #FIXME these are copied from 5.52 TeV
-  PbPb5p5: 
+  PbPb5p02: 
     sigmaAA_b: 7.8 #FIXME these are copied from 5.52 TeV
     lumiAA_monthi_invnb: 4.92 #FIXME these are copied from 5.52 TeV
+    # from https://alice-notes.web.cern.ch/system/files/notes/public/711/2018-06-18-ALICE_public_note.pdf
+    cent010:
+      #Taa: 23.42 
+      Ncoll: 1583 
+      EventScaling: 10
+    cent3050:
+      #Taa: 3.82 
+      Ncoll: 258.2 
+      EventScaling: 5
+    cent0100:
+      EventScaling: 1
   PbPb5p52: 
     sigmaAA_b: 7.8
     lumiAA_monthi_invnb: 4.92 

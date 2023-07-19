@@ -20,6 +20,13 @@ SHMC_2021:
       Omega_cc: 9.505e-05
       Omega_ccc: 1.287e-06
       X3872: 1.985e-04
+
+TAMU:
+  PbPb5p02:
+    absy0p5:
+      Lambda_c: 1.312e+00
+      y_corr: 2.9
+      #y_corr: 2
   
 Stat_ChoLee_1:
   PbPb2p76:
@@ -32,6 +39,8 @@ Stat_ChoLee_2:
     absy0p5:
       Xi_cc: 6.70e-03
       Omega_ccc: 5.9e-06
+      Lambda_c: 1.312e+00
+      y_corr: 2
   
 Stat_ChoLee_tetra:
   PbPb2p76:
@@ -61,12 +70,12 @@ Catania:
       Xi_cc: 1.8e-03
       Omega_ccc: 3.5e-05
 
-Pyhia8mode2:
+Pythia8mode2:
   pp14p0:
     absy1p44:
       Lambda_c: 1
 
-Pyhia8monash:
+Pythia8monash:
   pp14p0:
     absy1p44:
       Jpsitoee: 1
