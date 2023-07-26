@@ -79,8 +79,7 @@ void BookHistos();
 void GetBkgPerEventAndEff(const char* signalfilename, // ./data/AnalysisResults_train11813_ppSignal.root
 			  const char* bkgfilename, // ./data/AnalysisResults_train11812_PbPbbgd.root
 			  const process_t channel,
-        TString centrality, // 010 or 3050
-        TString period) { // d9m or d9n
+        TString centrality){ // 010 or 3050
   
   mystyle();
 
@@ -99,15 +98,8 @@ void GetBkgPerEventAndEff(const char* signalfilename, // ./data/AnalysisResults_
 
   int lowPercEdge = 0;
   int upPercEdge = 0;
-  if(period.Data() == std::string("d9m")) {
-    if(centrality.Data() == std::string("010")) {
-      lowPercEdge = 5900; // 0-10%
-      upPercEdge = 10000;
-    }else { // 30-50%
-      lowPercEdge = 1240; // 30-50%
-      upPercEdge = 3006;
-    }
-  }else {
+
+  //  values for d9n period
     if(centrality.Data() == std::string("010")) {
       lowPercEdge = 4494; // 0-10%
       upPercEdge = 10000;
@@ -115,7 +107,6 @@ void GetBkgPerEventAndEff(const char* signalfilename, // ./data/AnalysisResults_
       lowPercEdge = 898; // 30-50%
       upPercEdge = 2223;
     }
-  }
 
   hMassVsPtSig = (TH2F*) dir_sig->Get(histNameSig[channel]);
   //hMassVsPtSig3D = (TH3F*) dir_sig->Get(histNameSig[channel]);
@@ -151,27 +142,39 @@ void GetBkgPerEventAndEff(const char* signalfilename, // ./data/AnalysisResults_
     return;
   }
 
+  printf("debug 1 \n");
+   
   nPtBins = TMath::Min(hMassVsPtBkg->GetNbinsY(), nMaxPtBins);
   nPtBins = nPtBins; 
   BookCanvas();
 
+  printf("debug 2 \n");
+   
   for (int i = 0; i<nPtBins; i++) {
     ptBinLimits[i]   = hMassVsPtSig->GetYaxis()->GetBinLowEdge(i+1);
     ptBinLimits[i+1] = hMassVsPtSig->GetYaxis()->GetBinLowEdge(i+1) + hMassVsPtSig->GetYaxis()->GetBinWidth(i+1);
   }
 
+  printf("debug 3 \n");
+   
   BookHistos();
 
   auto hPtGenSig  = (TH1F*) dir_sig_mc->Get("hPtGen");
   auto hPtRecSig  = (TH1F*) dir_sig_mc->Get("hPtRecSig");
   
+  printf("debug 4 \n");
+   
   auto gp = (TH1D*) hPtGenSig->Rebin(nPtBins,"gp", ptBinLimits);
   auto rp = (TH1D*) hPtRecSig->Rebin(nPtBins,"eff",ptBinLimits);
   
+  printf("debug 5 \n");
+   
   gp -> Sumw2();
   rp -> Sumw2();
   rp -> Divide(gp);
   
+  printf("debug 6 \n");
+   
   hEfficiency = (TH1D*) rp -> Clone();
   hEfficiency -> SetTitle(";p_{T} (GeV/c); Reconstruction Efficiency");
   hEfficiency -> SetLineColor(kRed);
@@ -263,7 +266,7 @@ void GetBkgPerEventAndEff(const char* signalfilename, // ./data/AnalysisResults_
   hEfficiency->Write();
   fileOutEff->Close();
  
-  TFile *fileOutBkgPerEvents = new TFile(Form("bkgPerEvents_%s_%scent_%s_y1p44_test.root",hfTaskLabel[channel], centrality.Data(), period.Data()),"recreate");
+  TFile *fileOutBkgPerEvents = new TFile(Form("bkgPerEvents_%s_%scent_d9n_y1p44_test.root",hfTaskLabel[channel], centrality.Data()),"recreate");
   cnvBkgperEvents -> cd();
   cnvBkgperEvents -> SetLogy();
   hBkgPerEvent -> Draw("e ][");

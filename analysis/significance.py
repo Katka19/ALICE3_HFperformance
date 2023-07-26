@@ -50,17 +50,19 @@ def analysis(hadron="Lambda_c", collision="pp14p0", yrange="absy1p44", \
     sigma_aa_b = paramgen["statistics"][collision]["sigmaAA_b"]
     lumiaa_monthi_invnb = paramgen["statistics"][collision]["lumiAA_monthi_invnb"]
     event_scaling = paramgen["statistics"][collision][centrality]["EventScaling"]
+    #nevt = sigma_aa_b * 5.6 * 1e9 / 10 # Sourav: 5.6 nb for one year of run 5, assume constant centrality dist. -> scale with 10 to have 0-10%
     nevt = sigma_aa_b * lumiaa_monthi_invnb * 1e9 * 7 / event_scaling # 5*7=35 nb for whole Run 5, assume constant centrality dist. -> scale with 5 to have 30-50%
-    #nevt = sigma_aa_b * lumiaa_monthi_invnb * 1e9 * 5 # *5 is to have Nevents for all 5 Runs
     #nevt = 2.*1e9
     bratio = paramgen["branchingratio"][hadron][brmode]
     decaychannel = paramgen["latexparticle"][hadron]
     ncoll = paramgen["statistics"][collision][centrality]["Ncoll"]
 
     #yieldmid = paramyields[model][collision][yrange][hadron]
+    #note: here I hardcode "absy0p5" because in the database file we only hvae TAMU theory calculations for this rapidity
     yieldmid = paramyields[model][collision]["absy0p5"][hadron]
     y_corr = paramyields[model][collision]["absy0p5"]["y_corr"] # correction for TAMU which is in |y|<0.5
-    y_corrPythia = 1.0
+    y_corrPythia = paramsignificance[hadron][collision][yrange]["y_corrPythia"] #correction factor for pp yield which is |y|<1.44  
+    #y_corrPythia = 1.0
     #y_corrPythia = 1.0/1.44 #correction factor for pp yield which is |y|<1.44
     energy_corr = 5.02/14 #correction factor because pp yield is @14 TeV and PbPb is @5 TeV
     text = '%s, N_{ev} = %.0f 10^{12}' % (textmodel, nevt/1e12)
@@ -132,6 +134,7 @@ def analysis(hadron="Lambda_c", collision="pp14p0", yrange="absy1p44", \
         yieldperevent = histoyieldth.GetBinContent(ibin+1)
         bkgperevent = hbkgperevent.GetBinContent(ibin+1)
         eff = histoeff.GetBinContent(ibin+1)
+        #signalperevent = yieldperevent
         signalperevent = eff*yieldperevent
         significanceperevent = 0
         if bkgperevent > 0:
@@ -183,8 +186,8 @@ def analysis(hadron="Lambda_c", collision="pp14p0", yrange="absy1p44", \
     canvas.SaveAs(hadron+"_results.pdf")
     canvas.SaveAs(hadron+"_results.C")
 
-    foutput = TFile("foutput" + hadron + centrality + "_d9m_y1p44.root", "recreate")
-    #foutput = TFile("foutput" + hadron + centrality + "_d9n_y1p44.root", "recreate")
+    foutput = TFile("scopingdoc/foutput" + hadron + centrality + "_d9n_y1p44.root", "recreate")
+    #foutput = TFile("foutput" + hadron + centrality + "_d9n_y1p0_test.root", "recreate")
     foutput.cd()
     histoeff.Write()
     hbkgperevent.Write()
@@ -194,8 +197,8 @@ def analysis(hadron="Lambda_c", collision="pp14p0", yrange="absy1p44", \
     histosignal.Write()
     histodndptth.Write()
     histosigoverbkg.Write()
-analysis("Lambda_c", "PbPb5p02", "absy1p44", "central", "TAMU", "cent010", 1)
-#analysis("Lambda_c", "PbPb5p02", "absy1p44", "central", "TAMU", "cent3050", 1)
+#analysis("Lambda_c", "PbPb5p02", "absy1p44", "central", "TAMU", "cent010", 1)
+analysis("Lambda_c", "PbPb5p02", "absy1p44", "central", "TAMU", "cent3050", 1)
 
 #analysis("Lambda_c", "PbPb5p02", "absy1p0", "central", "TAMU", "cent010", 1)
 #analysis("Lambda_c", "PbPb5p02", "absy1p0", "central", "TAMU", "cent3050", 1)
